@@ -18,7 +18,7 @@ winner(Board, [T|_], Winner, A) :- A=<76,writeln(A), nonvar(T),vertWinner(Board,
 winner(Board, [_|Q], Winner, A) :- NewA is A+1, winner(Board, Q, Winner, NewA).
 
 vertWinner(_ , _ , _, 5).
-vertWinner(Board, X, E, A) :- X=<76, write('A :'),nth0(X, Board, E),  NewA is A+1, writeln('hello'),NewX is X+11, vertWinner(Board, NewX, E, NewA).
+vertWinner(Board, X, E, A) :- X=<76, write('A :'),not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, writeln('hello'),NewX is X+11, vertWinner(Board, NewX, E, NewA).
 
 %winner(Board, P) :- Board = [P,Q,R,_,_,_,_,_,_], P==Q, Q==R, nonvar(P). % first row
 %winner(Board, P) :- Board = [_,_,_,P,Q,R,_,_,_], P==Q, Q==R, nonvar(P). % second rowwinner(Board, P) 
