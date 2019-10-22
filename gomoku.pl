@@ -9,20 +9,20 @@ printVal(N) :- board(B), nth0(N,B,Val), write(Val), write(' ').
 
 %%%% Display board
 displayBoard :-
-	writeln('*-------------------------*'),
-	writeln('   0 1 2 3 4 5 6 7 8 9 10'),
-	write(' 0 '), printRow(0), writeln(''),
-	write(' 1 '),printRow(1), writeln(''),
-	write(' 2 '),printRow(2), writeln(''),
-	write(' 3 '),printRow(3), writeln(''),
-	write(' 4 '),printRow(4), writeln(''),
-	write(' 5 '),printRow(5), writeln(''),
-	write(' 6 '),printRow(6), writeln(''),
-	write(' 7 '),printRow(7), writeln(''),
-	write(' 8 '),printRow(8), writeln(''),
-	write(' 9 '),printRow(9), writeln(''),
-	write('10 '), printRow(10), writeln(''),
-	writeln('*-------------------------*').
+	writeln('  C 0 1 2 3 4 5 6 7 8 9 10'),
+	writeln(' R *----------------------*'),
+	write(' 0 |'), printRow(0), writeln('|'),
+	write(' 1 |'),printRow(1), writeln('|'),
+	write(' 2 |'),printRow(2), writeln('|'),
+	write(' 3 |'),printRow(3), writeln('|'),
+	write(' 4 |'),printRow(4), writeln('|'),
+	write(' 5 |'),printRow(5), writeln('|'),
+	write(' 6 |'),printRow(6), writeln('|'),
+	write(' 7 |'),printRow(7), writeln('|'),
+	write(' 8 |'),printRow(8), writeln('|'),
+	write(' 9 |'),printRow(9), writeln('|'),
+	write('10 |'), printRow(10), writeln('|'),
+	writeln('   *----------------------*').
 	
 %%%%% Start the game! 
-init :- length(Board,121), assert(board(Board)).
+init :- length(Board,121), assert(board(Board)),displayBoard.
