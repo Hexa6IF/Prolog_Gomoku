@@ -9,22 +9,31 @@
 :- dynamic board/1.
 
 %%%% Test is the game is finished %%%
-gameover(Winner) :- board(Board), winner(Board,Winner), !.  % There exists a winning configuration: We cut!
+gameover(Winner) :- board(Board), winner(Board, Board, Winner, 0), !.  % There exists a winning configuration: We cut!
 gameover('Draw') :- board(Board), isBoardFull(Board). % the Board is fully instanciated (no free variable): Draw.
 
 %%%% Test if a Board is a winning configuration for the player P.
-winner(Board, P) :- Board = [P,Q,R,_,_,_,_,_,_], P==Q, Q==R, nonvar(P). % first row
-winner(Board, P) :- Board = [_,_,_,P,Q,R,_,_,_], P==Q, Q==R, nonvar(P). % second rowwinner(Board, P) 
-winner(Board, P) :- Board = [_,_,_,_,_,_,P,Q,R], P==Q, Q==R, nonvar(P). % third row
-winner(Board, P) :- Board = [P,_,_,Q,_,_,R,_,_], P==Q, Q==R, nonvar(P). % first column
-winner(Board, P) :- Board = [_,P,_,_,Q,_,_,R,_], P==Q, Q==R, nonvar(P). % second column
-winner(Board, P) :- Board = [_,_,P,_,_,Q,_,_,R], P==Q, Q==R, nonvar(P). % third column
-winner(Board, P) :- Board = [P,_,_,_,Q,_,_,_,R], P==Q, Q==R, nonvar(P). % first diagonal
-winner(Board, P) :- Board = [_,_,P,_,Q,_,R,_,_], P==Q, Q==R, nonvar(P). % second diagonal
+
+winner(Board, [T|_], Winner, A) :- A=<76,writeln(A), nonvar(T),vertWinner(Board, A, Winner, 0).
+winner(Board, [_|Q], Winner, A) :- NewA is A+1, winner(Board, Q, Winner, NewA).
+
+vertWinner(_ , _ , _, 5).
+vertWinner(Board, X, E, A) :- X=<76, write('A :'),nth0(X, Board, E),  NewA is A+1, writeln('hello'),NewX is X+11, vertWinner(Board, NewX, E, NewA).
+
+%winner(Board, P) :- Board = [P,Q,R,_,_,_,_,_,_], P==Q, Q==R, nonvar(P). % first row
+%winner(Board, P) :- Board = [_,_,_,P,Q,R,_,_,_], P==Q, Q==R, nonvar(P). % second rowwinner(Board, P) 
+%winner(Board, P) :- Board = [_,_,_,_,_,_,P,Q,R], P==Q, Q==R, nonvar(P). % third row
+%winner(Board, P) :- Board = [P,_,_,Q,_,_,R,_,_], P==Q, Q==R, nonvar(P). % first column
+%winner(Board, P) :- Board = [_,P,_,_,Q,_,_,R,_], P==Q, Q==R, nonvar(P). % second column
+%winner(Board, P) :- Board = [_,_,P,_,_,Q,_,_,R], P==Q, Q==R, nonvar(P). % third column
+%winner(Board, P) :- Board = [P,_,_,_,Q,_,_,_,R], P==Q, Q==R, nonvar(P). % first diagonal
+%winner(Board, P) :- Board = [_,_,P,_,Q,_,R,_,_], P==Q, Q==R, nonvar(P). % second diagonal
 
 %%%% Recursive predicate that checks if all the elements of the List (a board) %%%% are instanciated: true e.g. for [x,x,o,o,x,o,x,x,o] false for [x,x,o,o,_G125,o,x,x,o]
 isBoardFull([]).
 isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
+
+
 
 %%%% Artificial intelligence: choose in a Board the index to play for Player (_)
 %%%% This AI plays randomly and does not care who is playing: it chooses a free position
@@ -38,12 +47,11 @@ human(Board, Index,_) :- repeat,
 						 read(MoveR),
 						 Index is MoveC + 11 * MoveR, 
 						 nth0(Index, Board, Elem), 
-						 var(Elem), 
-						 writeln(' '),
+						 var(Elem),
 						 !.
 
 %%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner/board. 
-%playHuman:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard. % The game is not over, we play the next turn
+playHuman:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard. % The game is not over, we play the next turn
 playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciate the board from the knowledge base     
             displayBoard, % print it
 			human(Board, Move, 'x'),
@@ -51,7 +59,7 @@ playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciat
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one      
 			playAI. % next turn!
 
-%playAI:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard. % The game is not over, we play the next turn
+playAI:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard. % The game is not over, we play the next turn
 playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the board from the knowledge base     
             displayBoard, % print it 
             ia(Board, Move, 'o'),
