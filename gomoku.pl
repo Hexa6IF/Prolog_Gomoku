@@ -44,10 +44,12 @@ isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
 ia(Board, Index,_) :- repeat, Index is random(121), nth0(Index, Board, Elem), var(Elem), !.
 
 parcours :-  board(Board), assert(boardFloors([Board])),parcours(0).
-parcours(X):-  boardFloors([CurrentFloor|ExploredFloors]),nth0(X,CurrentFloor,'o'), winner(CurrentFloor, CurrentFloor, 'o', 0), !.
+parcours(X):-  boardFloors([PreviousFloor|ExploredFloors]),CurrentFloor=PreviousFloor,nth0(X,CurrentFloor,'o'), winner(CurrentFloor, CurrentFloor, 'o', 0),!.
 parcours(X):- boardFloors([CurrentFloor|_]),length(CurrentFloor, Length), NewX is X+1,NewX<Length, parcours(NewX).
 
-%parcours(X):- boardFloors(Board),length(Board, Length),Length<2,retract(boardFloors([Board|CurrentFloor]).
+%parcours(X):-retract(boardFloors([CurrentFloor|ExploredFloors])), assert(boardFloors(FloorModified,CurrentFloor|ExploredFloors).
+
+%parcours(X):- boardFloors(Board),length(Board, Length),Length<2,retract(boardFloors([Board]).
 
 ia2(Board,Index,_).
 
