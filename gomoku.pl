@@ -20,16 +20,16 @@ winner(Board, [T|_], Winner, A) :- A=<76, mod(A, 11)>=4, nonvar(T),leftDiagWinne
 winner(Board, [T|_], Winner, A) :- A=<72, mod(A, 11)=<6, nonvar(T),rightDiagWinner(Board, A, Winner, 0).
 winner(Board, [_|Q], Winner, A) :- NewA is A+1, winner(Board, Q, Winner, NewA).
 
-vertWinner(_ , _ , _, 2).
+vertWinner(_ , _ , _, 5).
 vertWinner(Board, X, E, A) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+11, vertWinner(Board, NewX, E, NewA).
 
-horiWinner(_ ,_ ,_ , 2).
+horiWinner(_ ,_ ,_ , 5).
 horiWinner(Board, X, E, A) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+1, horiWinner(Board, NewX, E, NewA).
 
-leftDiagWinner(_ ,_ ,_ , 2).
+leftDiagWinner(_ ,_ ,_ , 5).
 leftDiagWinner(Board, X, E, A) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+10, leftDiagWinner(Board, NewX, E, NewA).
 
-rightDiagWinner(_ ,_ ,_ , 2).
+rightDiagWinner(_ ,_ ,_ , 5).
 rightDiagWinner(Board, X, E, A) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+12, rightDiagWinner(Board, NewX, E, NewA).
 
 %%%% Recursive predicate that checks if all the elements of the List (a board) %%%% are instanciated: true e.g. for [x,x,o,o,x,o,x,x,o] false for [x,x,o,o,_G125,o,x,x,o]
