@@ -8,6 +8,8 @@
 
 :- dynamic board/1.
 
+:- dynamic boardFloors/1.
+
 %%%% Test is the game is finished %%%
 gameover(Winner) :- board(Board), aligned(Board, Board, Winner, 0, 5), !.  % There exists a winning configuration: We cut!
 gameover('Draw') :- board(Board), isBoardFull(Board). % the Board is fully instanciated (no free variable): Draw.
@@ -22,6 +24,7 @@ aligned(Board, [_|Q], Player, A, C) :- NewA is A+1, aligned(Board, Q, Player, Ne
 
 vertWinner(_ , _ , _, Y, Y).
 vertWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+11, vertWinner(Board, NewX, E, NewA, Y).
+
 
 horiWinner(_ ,_ ,_ , Y, Y).
 horiWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+1, horiWinner(Board, NewX, E, NewA, Y).
@@ -41,14 +44,25 @@ isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
 %%%% Artificial intelligence: choose in a Board the index to play for Player (_)
 %%%% This AI plays randomly and does not care who is playing: it chooses a free position
 %%%% in the Board (an element which is an free variable).
-ia(Board, Index,_) :- repeat, 
-						Index is random(121),
-						nth0(Index, Board, Elem), 
-						var(Elem), 
-						!.
 
-human(Board, Index,_) :- repeat,
-						 write('C: '),
+
+ia(Board, Index,_) :- repeat, Index is random(121), nth0(Index, Board, Elem), var(Elem), !.
+
+parcours(Board,Index,Player) :- CurrentFloor=Board, parcours([CurrentFloor],0, Index,Player).
+parcours([CurrentFloor|_],X, Index,Player):- nth0(X, CurrentFloor, Elem), var(Elem), nth0(X,CurrentFloor,Player), aligned(CurrentFloor, CurrentFloor, Player, 0, 5), Index is X, !.
+parcours([CurrentFloor|Q],X, Index, Player):- length(CurrentFloor, Length), NewX is X+1,NewX<Length, parcours([CurrentFloor|Q],NewX, Index, Player).
+
+% parcours(X):-retract(boardFloors([CurrentFloor|ExploredFloors])), assert(boardFloors(FloorModified,CurrentFloor|ExploredFloors).
+
+% parcours(X):- boardFloors(Board),length(Board, Length),Length<2,retract(boardFloors([Board]).
+
+ia2(Board,Index,Player) :-parcours(Board,Index,Player).
+ia2(Board,Index,_) :-ia(Board,Index,_). 
+
+
+
+human(Board, Index,_) :- repeat, 
+						 write('C: '), 
 						 read(MoveC),
 						 write('R: '),
 						 read(MoveR),
@@ -57,19 +71,21 @@ human(Board, Index,_) :- repeat,
 						 var(Elem),
 						 !.
 
-%%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner board.
 
-playHuman:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard. % The game is not over, we play the next turn
-playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciate the board from the knowledge base
+%%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner board. 
+playHuman:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
+playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciate the board from the knowledge base     
             displayBoard, % print it
-			human(Board, Move, 'x'),
+			%human(Board, Move, 'x'),
+			ia2(Board, Move, 'x'),
             playMove(Board,Move,NewBoard,'x'), % Play the move and get the result in a new Board
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one
 			playAI. % next turn!
 
-playAI:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard. % The game is not over, we play the next turn
-playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the board from the knowledge base
-            displayBoard, % print it
+
+playAI:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
+playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the board from the knowledge base     
+            displayBoard, % print it 
             ia(Board, Move, 'o'),
             playMove(Board, Move,NewBoard,'o'), % Play the move and get the result in a new Board
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one
