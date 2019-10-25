@@ -8,6 +8,8 @@
 
 :- dynamic board/1.
 
+:- dynamic boardFloors/1.
+
 %%%% Test is the game is finished %%%
 gameover(Winner) :- board(Board), winner(Board, Board, Winner, 0), !.  % There exists a winning configuration: We cut!
 gameover('Draw') :- board(Board), isBoardFull(Board). % the Board is fully instanciated (no free variable): Draw.
@@ -18,7 +20,7 @@ winner(Board, [T|_], Winner, A) :- A=<76, nonvar(T),vertWinner(Board, A, Winner,
 winner(Board, [_|Q], Winner, A) :- NewA is A+1, winner(Board, Q, Winner, NewA).
 
 vertWinner(_ , _ , _, 5).
-vertWinner(Board, X, E, A) :- X=<76, not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+11, vertWinner(Board, NewX, E, NewA).
+vertWinner(Board, X, E, A) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+1, vertWinner(Board, NewX, E, NewA).
 
 %winner(Board, P) :- Board = [P,Q,R,_,_,_,_,_,_], P==Q, Q==R, nonvar(P). % first row
 %winner(Board, P) :- Board = [_,_,_,P,Q,R,_,_,_], P==Q, Q==R, nonvar(P). % second rowwinner(Board, P) 
@@ -38,7 +40,17 @@ isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
 %%%% Artificial intelligence: choose in a Board the index to play for Player (_)
 %%%% This AI plays randomly and does not care who is playing: it chooses a free position
 %%%% in the Board (an element which is an free variable).
+
 ia(Board, Index,_) :- repeat, Index is random(121), nth0(Index, Board, Elem), var(Elem), !.
+
+parcours :-  board(Board), assert(boardFloors([Board])),parcours(0).
+parcours(X):-  boardFloors([CurrentFloor|ExploredFloors]),nth0(X,CurrentFloor,'o'), winner(CurrentFloor, CurrentFloor, 'o', 0), !.
+parcours(X):- boardFloors([CurrentFloor|_]),length(CurrentFloor, Length), NewX is X+1,NewX<Length, parcours(NewX).
+
+%parcours(X):- boardFloors(Board),length(Board, Length),Length<2,retract(boardFloors([Board|CurrentFloor]).
+
+ia2(Board,Index,_).
+
 
 human(Board, Index,_) :- repeat, 
 						 write('C: '), 
@@ -51,7 +63,7 @@ human(Board, Index,_) :- repeat,
 						 !.
 
 %%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner/board. 
-playHuman:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard. % The game is not over, we play the next turn
+playHuman:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
 playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciate the board from the knowledge base     
             displayBoard, % print it
 			human(Board, Move, 'x'),
@@ -59,7 +71,7 @@ playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciat
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one      
 			playAI. % next turn!
 
-playAI:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard. % The game is not over, we play the next turn
+playAI:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
 playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the board from the knowledge base     
             displayBoard, % print it 
             ia(Board, Move, 'o'),
