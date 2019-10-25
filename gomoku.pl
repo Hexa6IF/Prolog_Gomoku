@@ -9,28 +9,28 @@
 :- dynamic board/1.
 
 %%%% Test is the game is finished %%%
-gameover(Winner) :- board(Board), winner(Board, Board, Winner, 0), !.  % There exists a winning configuration: We cut!
+gameover(Winner) :- board(Board), aligned(Board, Board, Winner, 0, 5), !.  % There exists a winning configuration: We cut!
 gameover('Draw') :- board(Board), isBoardFull(Board). % the Board is fully instanciated (no free variable): Draw.
 
 %%%% Test if a Board is a winning configuration for the player P.
 
-winner(Board, [T|_], Winner, A) :- A=<76, nonvar(T),vertWinner(Board, A, Winner, 0).
-winner(Board, [T|_], Winner, A) :- mod(A, 11)=<6, nonvar(T),horiWinner(Board, A, Winner, 0).
-winner(Board, [T|_], Winner, A) :- A=<76, mod(A, 11)>=4, nonvar(T),leftDiagWinner(Board, A, Winner, 0).
-winner(Board, [T|_], Winner, A) :- A=<72, mod(A, 11)=<6, nonvar(T),rightDiagWinner(Board, A, Winner, 0).
-winner(Board, [_|Q], Winner, A) :- NewA is A+1, winner(Board, Q, Winner, NewA).
+aligned(Board, [T|_], Player, A, C) :- A=<76, nonvar(T),vertWinner(Board, A, Player, 0, C).
+aligned(Board, [T|_], Player, A, C) :- mod(A, 11)=<6, nonvar(T),horiWinner(Board, A, Player, 0, C).
+aligned(Board, [T|_], Player, A, C) :- A=<76, mod(A, 11)>=4, nonvar(T),leftDiagWinner(Board, A, Player, 0, C).
+aligned(Board, [T|_], Player, A, C) :- A=<72, mod(A, 11)=<6, nonvar(T),rightDiagWinner(Board, A, Player, 0, C).
+aligned(Board, [_|Q], Player, A, C) :- NewA is A+1, aligned(Board, Q, Player, NewA, C).
 
-vertWinner(_ , _ , _, 5).
-vertWinner(Board, X, E, A) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+11, vertWinner(Board, NewX, E, NewA).
+vertWinner(_ , _ , _, Y, Y).
+vertWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+11, vertWinner(Board, NewX, E, NewA, Y).
 
-horiWinner(_ ,_ ,_ , 5).
-horiWinner(Board, X, E, A) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+1, horiWinner(Board, NewX, E, NewA).
+horiWinner(_ ,_ ,_ , Y, Y).
+horiWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+1, horiWinner(Board, NewX, E, NewA, Y).
 
-leftDiagWinner(_ ,_ ,_ , 5).
-leftDiagWinner(Board, X, E, A) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+10, leftDiagWinner(Board, NewX, E, NewA).
+leftDiagWinner(_ ,_ ,_ , Y, Y).
+leftDiagWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+10, leftDiagWinner(Board, NewX, E, NewA, Y).
 
-rightDiagWinner(_ ,_ ,_ , 5).
-rightDiagWinner(Board, X, E, A) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+12, rightDiagWinner(Board, NewX, E, NewA).
+rightDiagWinner(_ ,_ ,_ , Y, Y).
+rightDiagWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+12, rightDiagWinner(Board, NewX, E, NewA, Y).
 
 %%%% Recursive predicate that checks if all the elements of the List (a board) %%%% are instanciated: true e.g. for [x,x,o,o,x,o,x,x,o] false for [x,x,o,o,_G125,o,x,x,o]
 isBoardFull([]).
@@ -41,7 +41,11 @@ isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
 %%%% Artificial intelligence: choose in a Board the index to play for Player (_)
 %%%% This AI plays randomly and does not care who is playing: it chooses a free position
 %%%% in the Board (an element which is an free variable).
-ia(Board, Index,_) :- repeat, Index is random(121), nth0(Index, Board, Elem), var(Elem), !.
+ia(Board, Index,_) :- repeat, 
+						Index is random(121),
+						nth0(Index, Board, Elem), 
+						var(Elem), 
+						!.
 
 human(Board, Index,_) :- repeat,
 						 write('C: '),
