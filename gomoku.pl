@@ -8,8 +8,6 @@
 
 :- dynamic board/1.
 
-:- dynamic boardFloors/1.
-
 %%%% Test is the game is finished %%%
 gameover(Winner) :- board(Board), aligned(Board, Board, Winner, 0, 5), !.  % There exists a winning configuration: We cut!
 gameover('Draw') :- board(Board), isBoardFull(Board). % the Board is fully instanciated (no free variable): Draw.
@@ -48,13 +46,17 @@ isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
 
 ia(Board, Index,_) :- repeat, Index is random(121), nth0(Index, Board, Elem), var(Elem), !.
 
-parcours(Board,Index,Player) :- CurrentFloor=Board, parcours([CurrentFloor],0, Index,Player).
-parcours([CurrentFloor|_],X, Index,Player):- nth0(X, CurrentFloor, Elem), var(Elem), nth0(X,CurrentFloor,Player), aligned(CurrentFloor, CurrentFloor, Player, 0, 5), Index is X, !.
-parcours([CurrentFloor|Q],X, Index, Player):- length(CurrentFloor, Length), NewX is X+1,NewX<Length, parcours([CurrentFloor|Q],NewX, Index, Player).
+%%%% Old
+%parcours(Board,Index,Player) :- CurrentFloor=Board, parcours([CurrentFloor],0, Index,Player).
+%parcours([CurrentFloor|_],X, Index,Player):- nth0(X, CurrentFloor, Elem), var(Elem), nth0(X,CurrentFloor,Player), aligned(CurrentFloor, CurrentFloor, Player, 0, 5), Index is X, !.
+%parcours([CurrentFloor|Q],X, Index, Player):- length(CurrentFloor, Length), NewX is X+1,NewX<Length, parcours([CurrentFloor|Q],NewX, Index, Player).
 
-% parcours(X):-retract(boardFloors([CurrentFloor|ExploredFloors])), assert(boardFloors(FloorModified,CurrentFloor|ExploredFloors).
+parcours(Board,Index,Player) :- CurrentFloor=Board, parcours([CurrentFloor],0, Index,Player,5).
+parcours([CurrentFloor|_],X, Index,Player,Size):- nth0(X, CurrentFloor, Elem), var(Elem), nth0(X,CurrentFloor,Player), aligned(CurrentFloor, CurrentFloor, Player, 0, Size), Index is X, !.
+parcours([CurrentFloor|Q],X, Index, Player,Size):- length(CurrentFloor, Length), NewX is X+1,NewX<Length, parcours([CurrentFloor|Q],NewX, Index, Player,Size).
+parcours([CurrentFloor|Q],120, Index, Player,Size):- Size>2,NewSize is Size-1,!, parcours([CurrentFloor|Q],0, Index, Player,NewSize).
 
-% parcours(X):- boardFloors(Board),length(Board, Length),Length<2,retract(boardFloors([Board]).
+%parcours(Floors,X,Index,Player):- boardFloors(Board),length(Board, Length),Length<2,retract(boardFloors([Board]).
 
 ia2(Board,Index,Player) :-parcours(Board,Index,Player).
 ia2(Board,Index,_) :-ia(Board,Index,_). 
