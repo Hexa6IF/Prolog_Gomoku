@@ -14,30 +14,35 @@ gameover('Draw') :- board(Board), isBoardFull(Board). % the Board is fully insta
 
 %%%% Test if a Board is a winning configuration for the player P.
 
-aligned(Board, [T|_], Player, A, C) :- A=<76, nonvar(T),vertWinner(Board, A, Player, 0, C).
+aligned(Board, [T|_], Player, A, C) :- div(A,11)=<6, nonvar(T),vertWinner(Board, A, Player, 0, C).
 aligned(Board, [T|_], Player, A, C) :- mod(A, 11)=<6, nonvar(T),horiWinner(Board, A, Player, 0, C).
-aligned(Board, [T|_], Player, A, C) :- A=<76, mod(A, 11)>=4, nonvar(T),leftDiagWinner(Board, A, Player, 0, C).
-aligned(Board, [T|_], Player, A, C) :- A=<72, mod(A, 11)=<6, nonvar(T),rightDiagWinner(Board, A, Player, 0, C).
+aligned(Board, [T|_], Player, A, C) :- div(A,11)=<6, mod(A, 11)>=4, nonvar(T),leftDiagWinner(Board, A, Player, 0, C).
+aligned(Board, [T|_], Player, A, C) :- div(A,11)=<6, mod(A, 11)=<6, nonvar(T),rightDiagWinner(Board, A, Player, 0, C).
 aligned(Board, [_|Q], Player, A, C) :- NewA is A+1, aligned(Board, Q, Player, NewA, C).
 
 vertWinner(_ , _ , _, Y, Y).
-vertWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+11, vertWinner(Board, NewX, E, NewA, Y).
-
+vertWinner(Board, X, Winner, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, Winner),  NewA is A+1, NewX is X+11, vertWinner(Board, NewX, Winner, NewA, Y).
 
 horiWinner(_ ,_ ,_ , Y, Y).
-horiWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+1, horiWinner(Board, NewX, E, NewA, Y).
+horiWinner(Board, X, Winner, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, Winner),  NewA is A+1, NewX is X+1, horiWinner(Board, NewX, Winner, NewA, Y).
 
 leftDiagWinner(_ ,_ ,_ , Y, Y).
-leftDiagWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+10, leftDiagWinner(Board, NewX, E, NewA, Y).
+leftDiagWinner(Board, X, Winner, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, Winner),  NewA is A+1, NewX is X+10, leftDiagWinner(Board, NewX, Winner, NewA, Y).
 
 rightDiagWinner(_ ,_ ,_ , Y, Y).
-rightDiagWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+12, rightDiagWinner(Board, NewX, E, NewA, Y).
+rightDiagWinner(Board, X, Winner, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, Winner),  NewA is A+1, NewX is X+12, rightDiagWinner(Board, NewX, Winner, NewA, Y).
 
 %%%% Recursive predicate that checks if all the elements of the List (a board) %%%% are instanciated: true e.g. for [x,x,o,o,x,o,x,x,o] false for [x,x,o,o,_G125,o,x,x,o]
 isBoardFull([]).
 isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
 
+%%%% Test if a Move is a interesting configuration for the ai.
 
+localAligned(Board,Move,Length):- vertWinner()
+%localAligned(Board,Move,Length):-
+%localAligned(Board,Move,Length):-
+%localAligned(Board,Move,Length):-
+%localAligned(Board,Move,Length):-
 
 %%%% Artificial intelligence: choose in a Board the index to play for Player (_)
 %%%% This AI plays randomly and does not care who is playing: it chooses a free position
@@ -51,16 +56,43 @@ ia(Board, Index,_) :- repeat, Index is random(121), nth0(Index, Board, Elem), va
 %parcours([CurrentFloor|_],X, Index,Player):- nth0(X, CurrentFloor, Elem), var(Elem), nth0(X,CurrentFloor,Player), aligned(CurrentFloor, CurrentFloor, Player, 0, 5), Index is X, !.
 %parcours([CurrentFloor|Q],X, Index, Player):- length(CurrentFloor, Length), NewX is X+1,NewX<Length, parcours([CurrentFloor|Q],NewX, Index, Player).
 
-parcours(Board,Index,Player) :- CurrentFloor=Board, parcours([CurrentFloor],0, Index,Player,5).
-parcours([CurrentFloor|_],X, Index,Player,Size):- nth0(X, CurrentFloor, Elem), var(Elem), nth0(X,CurrentFloor,Player), aligned(CurrentFloor, CurrentFloor, Player, 0, Size), Index is X, !.
-parcours([CurrentFloor|Q],X, Index, Player,Size):- length(CurrentFloor, Length), NewX is X+1,NewX<Length, parcours([CurrentFloor|Q],NewX, Index, Player,Size).
-parcours([CurrentFloor|Q],120, Index, Player,Size):- Size>2,NewSize is Size-1,!, parcours([CurrentFloor|Q],0, Index, Player,NewSize).
+winningMove(Board,Index,Player):- CurrentFloor=Board, winningMove([CurrentFloor],0, Index,Player,5).
+winningMove([CurrentFloor|_],X, Index,Player,Size):- nth0(X, CurrentFloor, Elem), var(Elem), nth0(X,CurrentFloor,Player), aligned(CurrentFloor, CurrentFloor, Player, 0, Size), Index is X, !.
+winningMove([CurrentFloor|Q],X, Index, Player,Size):- length(CurrentFloor, Length), NewX is X+1,NewX<Length, winningMove([CurrentFloor|Q],NewX, Index, Player,Size).
+%winningMove([CurrentFloor|Q],120, Index, Player,Size):- Size>2,NewSize is Size-1,!, winningMove([CurrentFloor|Q],0, Index, Player,NewSize).
 
 %parcours(Floors,X,Index,Player):- boardFloors(Board),length(Board, Length),Length<2,retract(boardFloors([Board]).
 
-ia2(Board,Index,Player) :-parcours(Board,Index,Player).
+ia2(Board,Index,Player) :- winningMove(Board,Index,Player).
 ia2(Board,Index,_) :-ia(Board,Index,_). 
 
+% ia qui évalue les gains de chaque position
+
+ia3(Board,Index,Player) :- length(GainPlayer,121),length(GainOpponent,121),gainStep(Board,Player,[GainPlayer,GainOpponent]), choix([GainPlayer,GainOpponent],Index).
+
+% Ordre : On appelle gain step, qui appelle gain move en l'initialisant à 0, gain move va calculer pour chaque coup le bénéfice apporté par la position après le coup, il le fait pour tout les coups d'une profondeur, puis appelle gain step avec la prochaine profondeur et l'autre joueur. Une fois arrivé à la dernière profondeur explorée, gain move ajoute la moyenne
+
+gainStep(Board,Player,[GainPlayer,GainOpponent],MaxDepth,_) :- Depth>0,GainPlayer=NewGainPlayer,GainOpponent=NewGainOpponent,gainMove(Board,Player,[NewGainPlayer,NewGainOpponent],0),NewDepth is Depth-1,GainPlayer=NextGainPlayer,GainOpponent=NextGainOpponent,nextPlayer(Player,NextPlayer),playMove(Board,Move,NewBoard,Player),gainStep(NewBoard,NextPlayer,[NextGainOpponent,NextGainPlayer],NewDepth),GainPlayer is (NewGainPlayer+NextGainPlayer)/2,GainOpponent is (NewGainOpponent+NextGainOpponent)/2.
+gainStep(_,_,_,0)
+
+gainStep(Board,Player,[GainPlayer,GainOpponent],Depth,Move) :- ,NewMove is Move+1,gainStep(Board,Player,[GainPlayer,GainOpponent],Depth,NewMove)
+gainStep(Board,Player,[GainPlayer,GainOpponent],Depth,Move)
+% nth0(Move,GainPlayer,(NewGainPlayer+NextGainPlayer)/2) pas du tout..
+
+% selectionner le gain max d'un tableau
+%sort(0,@>=,Gain,Ordered).
+%max_list(Gain,Max).
+
+gainMove(_,_,_,121,_).
+gainMove(Board,Player,[GainPlayer,GainOpponent],Move,Depth) :- nth0(Move,GainPlayer,Gain),fonctionGain(Board,Player,Move,Gain),Board=NewBoard,playMove(Board,Move,NewBoard,Player),NewMove is Move+1,gainMove(Board,Player,[GainPlayer,GainOpponent],NewMove,Depth),nextPlayer(Player,NextPlayer),playMove(Board,Move,NewBoard,Player).
+
+fonctionGain(Board,Player,Move,Gain)
+
+selectMove([BestPlayer|_],[WorstOpponent|_],OldBestPlayer,OldWorstOpponent,_) :- (BestPlayer-WorstOpponent)>(OldBestPlayer-OldWorstOpponent),selectMove([BestPlayer|_],[WorstOpponent|_],OldBestPlayer,OldWorstOpponent,_).
+selectMove([_|GainPlayer],[_|GainOpponent],BestPlayer,WorstOpponent,Move) :- NewMove is Move+1, selectMove(GainPlayer,GainOpponent,BestPlayer,WorstOpponent,NewMove is Move+1).
+
+nextPlayer('o','x').
+nextPlayer('x','o').
 
 
 human(Board, Index,_) :- repeat, 
