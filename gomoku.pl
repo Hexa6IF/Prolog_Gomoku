@@ -38,7 +38,7 @@ isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
 
 %%%% Test if a Move is a interesting configuration for the ai.
 
-localAligned(Board,Move,Length):- vertWinner()
+%localAligned(Board,Move,Length):- vertWinner()
 %localAligned(Board,Move,Length):-
 %localAligned(Board,Move,Length):-
 %localAligned(Board,Move,Length):-
@@ -59,7 +59,7 @@ ia(Board, Index,_) :- repeat, Index is random(121), nth0(Index, Board, Elem), va
 winningMove(Board,Index,Player):- CurrentFloor=Board, winningMove([CurrentFloor],0, Index,Player,5).
 winningMove([CurrentFloor|_],X, Index,Player,Size):- nth0(X, CurrentFloor, Elem), var(Elem), nth0(X,CurrentFloor,Player), aligned(CurrentFloor, CurrentFloor, Player, 0, Size), Index is X, !.
 winningMove([CurrentFloor|Q],X, Index, Player,Size):- length(CurrentFloor, Length), NewX is X+1,NewX<Length, winningMove([CurrentFloor|Q],NewX, Index, Player,Size).
-%winningMove([CurrentFloor|Q],120, Index, Player,Size):- Size>2,NewSize is Size-1,!, winningMove([CurrentFloor|Q],0, Index, Player,NewSize).
+winningMove([CurrentFloor|Q],120, Index, Player,Size):- Size>2,NewSize is Size-1,!, winningMove([CurrentFloor|Q],0, Index, Player,NewSize).
 
 %parcours(Floors,X,Index,Player):- boardFloors(Board),length(Board, Length),Length<2,retract(boardFloors([Board]).
 
@@ -68,32 +68,56 @@ ia2(Board,Index,_) :-ia(Board,Index,_).
 
 % ia qui évalue les gains de chaque position
 
-ia3(Board,Index,Player) :- length(GainPlayer,121),length(GainOpponent,121),gainStep(Board,Player,[GainPlayer,GainOpponent]), choix([GainPlayer,GainOpponent],Index).
+ia3(Board,Index,Player) :- gainStep(Player,1,_,Board).
+
+%%%% /!\ Chercher les possibilités d'utiliser les prédicats INCLUDE, MAPLIST, etc.. https://www.swi-prolog.org/pldoc/man?section=apply 
+%%%% Selectionne tous les indices d'une liste qui correspondent au max.
+selectMax(Indices,List,Max) :- max_list(List, Max), selectMax(Indices,List, Max,0).
+selectMax([],[],_,_).
+selectMax([X|Indices],[Max|List],Max,X) :- incr1(X,NewX), selectMax(Indices,List,Max,NewX).
+selectMax(Indices,[_|List],Max,X) :- incr1(X,NewX), selectMax(Indices,List,Max,NewX).
+
+%%%% retourne une liste de tous les index de List qui sont des variables.
+selectVar(List,Vars) :- selectVar(List,Vars,0).
+selectVar(List,[],A) :-  length(List,A).
+selectVar(List,[X|Vars],A) :-  nth0(A,List,Elem), var(Elem), X=A, incr1(A,NewA), selectVar(List,Vars,NewA).
+selectVar(List,Vars,A) :-  incr1(A,NewA), selectVar(List,Vars,NewA).
+
+%%%% incremente X en NewX et l'initialise si dans le cas où X est une variable.
+incr1(X,NewX) :-  NewX is X+1,nonvar(X).
+incr1(0,1).
+
+%%%% fonctions dont on remplace l'ordre des arguments
+fakenth0(List,Index,Elem) :- nth0(Index,List,Elem).
+fakeplayMove(Board,Player,Move,NewBoard) :- playMove(Board,Move,NewBoard,Player)
 
 % Ordre : On appelle gain step, qui appelle gain move en l'initialisant à 0, gain move va calculer pour chaque coup le bénéfice apporté par la position après le coup, il le fait pour tout les coups d'une profondeur, puis appelle gain step avec la prochaine profondeur et l'autre joueur. Une fois arrivé à la dernière profondeur explorée, gain move ajoute la moyenne
 
-gainStep(Board,Player,[GainPlayer,GainOpponent],MaxDepth,_) :- Depth>0,GainPlayer=NewGainPlayer,GainOpponent=NewGainOpponent,gainMove(Board,Player,[NewGainPlayer,NewGainOpponent],0),NewDepth is Depth-1,GainPlayer=NextGainPlayer,GainOpponent=NextGainOpponent,nextPlayer(Player,NextPlayer),playMove(Board,Move,NewBoard,Player),gainStep(NewBoard,NextPlayer,[NextGainOpponent,NextGainPlayer],NewDepth),GainPlayer is (NewGainPlayer+NextGainPlayer)/2,GainOpponent is (NewGainOpponent+NextGainOpponent)/2.
-gainStep(_,_,_,0)
+gainStep(_,0,_,_). %  Il ne reste plus d'étages à tester 
+gainStep(Player,Height,Max,Board) :- 
+			selectVar(Board,PossibleMoves),
+			length(PossibleMoves,NumberOfMoves),
+			length(Gain,NumberOfMoves),
+			maplist(gainMove(Board,Player),PossibleMoves,Gain), % On teste les gains pour chaque coup. Note : Maplist ajoute les arguments à la fin et dans l'ordre
+			%%% A METTRE DANS UNE AUTRE FONCTION EN RECURSIF
+			selectMax(Indices,Gain,Max), 								% On selectionne les meilleurs coups
+			maplist(fakenth0(PossibleMoves),Indices,NewPossibleMoves),  
+																		% Pour les coups possibles, on va chercher celui ou le gain possible de l'adversaire est le plus petit
+			nextPlayer(Player,Opponent),								
+			incr1(NewHeight,Height), 									% On réduit de 1 le nombre d'étage à tester
+			maplist(playMove(Board,Player),NewPossibleMoves,NewBoards), % A faire : Ajouter une liste des gain par étage. S'enfoncer au fur et à mesure (profondeur x, selectionner l'enchaînement de coups, profondeur suivante).
+			maplist(gainStep(Opponent,NewHeight),ListMaxOpponent,NewBoards),
+			selectMin(IndicesMin,ListMaxOpponent,Min), 
+			
+			%GainPlayer is (NewGainPlayer+NextGainPlayer)/2,
+			%GainOpponent is (NewGainOpponent+NextGainOpponent)/2.
 
-gainStep(Board,Player,[GainPlayer,GainOpponent],Depth,Move) :- ,NewMove is Move+1,gainStep(Board,Player,[GainPlayer,GainOpponent],Depth,NewMove)
-gainStep(Board,Player,[GainPlayer,GainOpponent],Depth,Move)
-% nth0(Move,GainPlayer,(NewGainPlayer+NextGainPlayer)/2) pas du tout..
+gainMove(_,_,_,1). % Provisoire, n'importe quel coup a un gain de 1
 
-% selectionner le gain max d'un tableau
-%sort(0,@>=,Gain,Ordered).
-%max_list(Gain,Max).
-
-gainMove(_,_,_,121,_).
-gainMove(Board,Player,[GainPlayer,GainOpponent],Move,Depth) :- nth0(Move,GainPlayer,Gain),fonctionGain(Board,Player,Move,Gain),Board=NewBoard,playMove(Board,Move,NewBoard,Player),NewMove is Move+1,gainMove(Board,Player,[GainPlayer,GainOpponent],NewMove,Depth),nextPlayer(Player,NextPlayer),playMove(Board,Move,NewBoard,Player).
-
-fonctionGain(Board,Player,Move,Gain)
-
-selectMove([BestPlayer|_],[WorstOpponent|_],OldBestPlayer,OldWorstOpponent,_) :- (BestPlayer-WorstOpponent)>(OldBestPlayer-OldWorstOpponent),selectMove([BestPlayer|_],[WorstOpponent|_],OldBestPlayer,OldWorstOpponent,_).
-selectMove([_|GainPlayer],[_|GainOpponent],BestPlayer,WorstOpponent,Move) :- NewMove is Move+1, selectMove(GainPlayer,GainOpponent,BestPlayer,WorstOpponent,NewMove is Move+1).
+%%%% Tell who is the next player
 
 nextPlayer('o','x').
 nextPlayer('x','o').
-
 
 human(Board, Index,_) :- repeat, 
 						 write('C: '), 
@@ -120,7 +144,7 @@ playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciat
 playAI:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
 playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the board from the knowledge base     
             displayBoard, % print it 
-            ia(Board, Move, 'o'),
+            human(Board, Move, 'o'),
             playMove(Board, Move,NewBoard,'o'), % Play the move and get the result in a new Board
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one
 			playHuman. % next turn!
@@ -159,19 +183,3 @@ displayBoard :-
 
 %%%%% Start the game!
 init :- length(Board,121), assert(board(Board)), playHuman.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
