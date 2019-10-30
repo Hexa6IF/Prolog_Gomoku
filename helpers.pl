@@ -16,3 +16,13 @@ isBoardFull([]).
 isBoardFull([H|T]) :-
     nonvar(H),
     isBoardFull(T).
+
+%%%%% Play a Move, the new Board will be the same, but one value will be instanciated with the Move
+playMove(Board, Move, NewBoard, Player) :-
+    Board=NewBoard,
+    nth0(Move, NewBoard, Player).
+
+%%%%% Remove old board save new on in the knowledge base
+applyIt(Board, NewBoard) :-
+    retract(board(Board)),
+    assert(board(NewBoard)).
