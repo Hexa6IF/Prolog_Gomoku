@@ -37,21 +37,28 @@ getPossibleMoves(Board, Moves, AllMoves, Acc) :- NewAcc is Acc + 1,
 findBestMove(Board, Player, BestMove) :- getPossibleMoves(Board, [], AllMoves, 0),
 					 minmax(Player, AllMoves, (nil, -1000), BestMove).
 
-minmax(_, [], (BestMove, _), BestMove).
-minmax(Player, [Move|Moves], CurrBest, BestMove) :- board(Board),
- 					  	    nth0(Move, Board, Player),
-				          	    evalBoard(Board, Player, 0, BoardScore, 0),
-					  	    compareMove(Move, BoardScore, CurrBest, UpdatedBest),
-					  	    minmax(Player, Moves, UpdatedBest, BestMove).
+minmax(_, _, [], (BestMove, BestScore), BestMove).
+minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :- copy(Board, NewBoard),
+							   nth0(Move, NewBoard, Player),
+				          	    	   evalBoard(NewBoard, Player, 0, BoardScore, 0),
+					  	           compareMove(Move, BoardScore, CurrBest, UpdatedBest),
+
+
+							   minmax(Board, Player, Moves, UpdatedBest, BestMove),
+						    	   !.
 
 compareMove(CurrMove, CurrScore, (_, BestScore), (CurrMove, CurrScore)) :- CurrScore >= BestScore.
 compareMove(_, CurrScore, (BestMove, BestScore), (BestMove, BestScore)) :- CurrScore < BestScore.
 
-getScore(1, 0, 250) :- !.
-getScore(2, 0, 500) :- !.
-getScore(3, 0, 1000) :- !.
-getScore(4, 0, 5000) :- !.
-getScore(5, 0, 10000) :- !.
+copy(OriList, CopyList) :- accCopy(OriList, CopyList).
+accCopy([], []).
+accCopy([H|T1], [H|T2]) :- accCopy(T1, T2).
+
+getScore(1, 0, 100) :- !.
+getScore(2, 0, 1000) :- !.
+getScore(3, 0, 10000) :- !.
+getScore(4, 0, 100000) :- !.
+getScore(5, 0, 1000000) :- !.
 getScore(_, _, 0) :- !.
 
 incrementCount(Player, Elem, PlyCount, OppCount, NewPlyCount, NewOppCount) :- Elem == Player,
@@ -156,6 +163,7 @@ parcours([CurrentFloor|Q],120, Index, Player,Size):- Size>2,NewSize is Size-1,!,
 ia2(Board,Index,Player) :-parcours(Board,Index,Player).
 ia2(Board,Index,_) :-ia(Board,Index,_).
 
+ia3(Board,Index,Player) :- findBestMove(Board,Player,Index).
 human(Board, Index,_) :- repeat,
 			 write('C: '),
 			 read(MoveC),
@@ -166,12 +174,14 @@ human(Board, Index,_) :- repeat,
 			 var(Elem),
 			 !.
 
+
+
 %%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner board.
 playHuman:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
 playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciate the board from the knowledge base
             displayBoard, % print it
-			%human(Board, Move, 'x'),
-			ia2(Board, Move, 'x'),
+			human(Board, Move, 'x'),
+			%ia(Board, Move, 'x'),
             playMove(Board,Move,NewBoard,'x'), % Play the move and get the result in a new Board
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one
 			playAI. % next turn!
@@ -189,7 +199,9 @@ playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the b
 playMove(Board,Move,NewBoard,Player) :- Board=NewBoard,  nth0(Move,NewBoard,Player).
 
 %%%% Remove old board save new on in the knowledge base
-applyIt(Board,NewBoard) :- retract(board(Board)), assert(board(NewBoard)).
+applyIt(Board,NewBoard) :- writeln(Board),
+			   writeln(NewBoard),
+			   retract(board(Board)), assert(board(NewBoard)).
 
 %%%% Predicate to get the next player
 
