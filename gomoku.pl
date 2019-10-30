@@ -23,6 +23,30 @@ leftDiagWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E
 rightDiagWinner(_ ,_ ,_ , Y, Y).
 rightDiagWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+12, rightDiagWinner(Board, NewX, E, NewA, Y).
 
+test(Idx) :- Idx is 1.
+
+getPossibleMoves(_, Moves, AllMoves, 121) :- AllMoves = Moves.
+getPossibleMoves(Board, Moves, AllMoves, Acc) :- NewAcc is Acc + 1,
+				       		 isPosEmpty(Board, Acc),
+				       		 getPossibleMoves(Board, [Acc|Moves], AllMoves, NewAcc),
+						 !.
+getPossibleMoves(Board, Moves, AllMoves, Acc) :- NewAcc is Acc + 1,
+			       	       		 getPossibleMoves(Board, Moves, AllMoves, NewAcc),
+						 !.
+
+findBestMove(Board, Player, BestMove) :- getPossibleMoves(Board, [], AllMoves, 0),
+					 minmax(Player, AllMoves, (nil, -1000), BestMove).
+
+minmax(_, [], (BestMove, _), BestMove).
+minmax(Player, [Move|Moves], CurrBest, BestMove) :- board(Board),
+ 					  	    nth0(Move, Board, Player),
+				          	    evalBoard(Board, Player, 0, BoardScore, 0),
+					  	    compareMove(Move, BoardScore, CurrBest, UpdatedBest),
+					  	    minmax(Player, Moves, UpdatedBest, BestMove).
+
+compareMove(CurrMove, CurrScore, (_, BestScore), (CurrMove, CurrScore)) :- CurrScore >= BestScore.
+compareMove(_, CurrScore, (BestMove, BestScore), (BestMove, BestScore)) :- CurrScore < BestScore.
+
 getScore(1, 0, 250) :- !.
 getScore(2, 0, 500) :- !.
 getScore(3, 0, 1000) :- !.
@@ -36,15 +60,15 @@ incrementCount(Player, Elem, PlyCount, OppCount, NewPlyCount, NewOppCount) :- El
 incrementCount(_, _, PlyCount, OppCount, NewPlyCount, NewOppCount) :- NewPlyCount is PlyCount,
 								      NewOppCount is OppCount + 1.
 
-evalBoard(_, _, Score, 121) :- writeln(Score).
-evalBoard(Board, Player, Score, Acc) :- evalHori(Board, Player, HScore, Acc, 0, 0, 0),
-					evalVert(Board, Player, VScore, Acc, 0, 0, 0),
-					evalLeftDiag(Board, Player, LDScore, Acc, 0, 0, 0),
-					evalRightDiag(Board, Player, RDScore, Acc, 0, 0, 0),
-					NewScore is Score + HScore + VScore + LDScore + RDScore,
-					NewAcc is Acc + 1,
-					evalBoard(Board, Player, NewScore, NewAcc),
-					!.
+evalBoard(_, _, Score, Score, 121).
+evalBoard(Board, Player, AccScore, BoardScore, Acc) :- evalHori(Board, Player, HScore, Acc, 0, 0, 0),
+						       evalVert(Board, Player, VScore, Acc, 0, 0, 0),
+					               evalLeftDiag(Board, Player, LDScore, Acc, 0, 0, 0),
+					               evalRightDiag(Board, Player, RDScore, Acc, 0, 0, 0),
+					               NewAccScore is AccScore + HScore + VScore + LDScore + RDScore,
+					               NewAcc is Acc + 1,
+					               evalBoard(Board, Player, NewAccScore, BoardScore, NewAcc),
+					               !.
 
 evalHori(_, _, HScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, HScore), !.
 evalHori(Board, Player, HScore, Index, Acc, PlyCount, OppCount) :- Acc =< 5,
