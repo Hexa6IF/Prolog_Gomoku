@@ -14,7 +14,6 @@ aligned(Board, [_|Q], Player, A, C) :- NewA is A+1, aligned(Board, Q, Player, Ne
 vertWinner(_ , _ , _, Y, Y).
 vertWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+11, vertWinner(Board, NewX, E, NewA, Y).
 
-
 horiWinner(_ ,_ ,_ , Y, Y).
 horiWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+1, horiWinner(Board, NewX, E, NewA, Y).
 
@@ -37,17 +36,17 @@ incrementCount(Player, Elem, PlyCount, OppCount, NewPlyCount, NewOppCount) :- El
 incrementCount(_, _, PlyCount, OppCount, NewPlyCount, NewOppCount) :- NewPlyCount is PlyCount,
 								      NewOppCount is OppCount + 1.
 
-evalBoard(_, _, Score, 121) :- writeln(Score), !.
+evalBoard(_, _, Score, 121) :- writeln(Score).
 evalBoard(Board, Player, Score, Acc) :- evalHori(Board, Player, HScore, Acc, 0, 0, 0),
 					evalVert(Board, Player, VScore, Acc, 0, 0, 0),
 					evalLeftDiag(Board, Player, LDScore, Acc, 0, 0, 0),
 					evalRightDiag(Board, Player, RDScore, Acc, 0, 0, 0),
 					NewScore is Score + HScore + VScore + LDScore + RDScore,
 					NewAcc is Acc + 1,
-					writeln(Acc),
-					evalBoard(Board, Player, NewScore, NewAcc).
+					evalBoard(Board, Player, NewScore, NewAcc),
+					!.
 
-evalHori(_, _, HScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, HScore).
+evalHori(_, _, HScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, HScore), !.
 evalHori(Board, Player, HScore, Index, Acc, PlyCount, OppCount) :- Acc =< 5,
 								   mod(Index, 11) =< 6,
 								   not(isPosEmpty(Board, Index)),
@@ -55,14 +54,13 @@ evalHori(Board, Player, HScore, Index, Acc, PlyCount, OppCount) :- Acc =< 5,
 						      		   NewAcc is Acc + 1,
 						      		   NewIndex is Index + 1,
 								   incrementCount(Player, Elem, PlyCount, OppCount, NewPlyCount, NewOppCount),
-								   evalHori(Board, Player, HScore, NewIndex, NewAcc, NewPlyCount, NewOppCount)
-								   .
+								   evalHori(Board, Player, HScore, NewIndex, NewAcc, NewPlyCount, NewOppCount).
 evalHori(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :- Acc =< 5,
 								   NewIndex is Index + 1,
 								   NewAcc is Acc + 1,
 								   evalHori(Board, Player, VScore, NewIndex, NewAcc, PlyCount, OppCount).
 
-evalVert(_, _, VScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, VScore).
+evalVert(_, _, VScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, VScore), !.
 evalVert(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :- Acc =< 5,
 								   Index =< 76,
 						      		   not(isPosEmpty(Board, Index)),
@@ -70,14 +68,13 @@ evalVert(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :- Acc =< 5,
 						      		   NewAcc is Acc + 1,
 						      		   NewIndex is Index + 11,
 								   incrementCount(Player, Elem, PlyCount, OppCount, NewPlyCount, NewOppCount),
-								   evalVert(Board, Player, VScore, NewIndex, NewAcc, NewPlyCount, NewOppCount),
-								   !.
+								   evalVert(Board, Player, VScore, NewIndex, NewAcc, NewPlyCount, NewOppCount).
 evalVert(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :- Acc =< 5,
 								   NewIndex is Index + 11,
 								   NewAcc is Acc + 1,
 								   evalVert(Board, Player, VScore, NewIndex, NewAcc, PlyCount, OppCount).
 
-evalLeftDiag(_, _, LDScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, LDScore).
+evalLeftDiag(_, _, LDScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, LDScore), !.
 evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :- Index =< 76,
 									mod(Index, 11) >= 4,
 						      		   	not(isPosEmpty(Board, Index)),
@@ -85,14 +82,13 @@ evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :- Index =<
 						      		   	NewAcc is Acc + 1,
 						      		   	NewIndex is Index + 10,
 								   	incrementCount(Player, Elem, PlyCount, OppCount, NewPlyCount, NewOppCount),
-								   	evalLeftDiag(Board, Player, LDScore, NewIndex, NewAcc, NewPlyCount, NewOppCount),
-								   	!.
+								   	evalLeftDiag(Board, Player, LDScore, NewIndex, NewAcc, NewPlyCount, NewOppCount).
 evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :- Acc =< 5,
 								   	NewIndex is Index + 10,
 								   	NewAcc is Acc + 1,
 								   	evalLeftDiag(Board, Player, LDScore, NewIndex, NewAcc, PlyCount, OppCount).
 
-evalRightDiag(_, _, RDScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, RDScore).
+evalRightDiag(_, _, RDScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, RDScore), !.
 evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :- Index =< 76,
 									 mod(Index, 11) =< 6,
 						      		   	 not(isPosEmpty(Board, Index)),
@@ -100,8 +96,7 @@ evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :- Index =
 						      		   	 NewAcc is Acc + 1,
 						      		   	 NewIndex is Index + 12,
 									 incrementCount(Player, Elem, PlyCount, OppCount, NewPlyCount, NewOppCount),
-								   	 evalRightDiag(Board, Player, RDScore, NewIndex, NewAcc, NewPlyCount, NewOppCount),
-								   	 !.
+								   	 evalRightDiag(Board, Player, RDScore, NewIndex, NewAcc, NewPlyCount, NewOppCount).
 evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :- Acc =< 5,
 								   	 NewIndex is Index + 12,
 								   	 NewAcc is Acc + 1,
