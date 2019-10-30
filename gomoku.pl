@@ -1,16 +1,7 @@
-
-% The game state will be represented by a list of 9 elements
-% board(_,_,_,_,_,_,_,_,_) at the beginning
-% eg board(_,_,'x',_,_,_,_,_,_) after the first round
-% eg board(_,_,'x',_,_,_,'o',_,_) after the second round
-% ...
-% until someone wins or the board is fully instanciated
-
 :- dynamic board/1.
 
-%%%% Test is the game is finished %%%
-gameover(Winner) :- board(Board), aligned(Board, Board, Winner, 0, 5), !.  % There exists a winning configuration: We cut!
-gameover('Draw') :- board(Board), isBoardFull(Board). % the Board is fully instanciated (no free variable): Draw.
+gameover(Winner) :- board(Board), aligned(Board, Board, Winner, 0, 5), !.
+gameover('Draw') :- board(Board), isBoardFull(Board).
 
 %%%% Test if a Board is a winning configuration for the player P.
 
@@ -33,7 +24,94 @@ leftDiagWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E
 rightDiagWinner(_ ,_ ,_ , Y, Y).
 rightDiagWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+12, rightDiagWinner(Board, NewX, E, NewA, Y).
 
+getScore(1, 0, Score) :- Score = 250.
+getScore(2, 0, Score) :- Score = 500.
+getScore(3, 0, Score) :- Score = 1000.
+getScore(4, 0, Score) :- Score = 5000.
+getScore(5, 0, Score) :- Score = 10000.
+getScore(_, _, Score) :- Score = 0.
+
+evalBoard(_, _, _, _, 121).
+evalBoard(Board, [H|T], Player, Score, Acc) :- evalHori(Board, Player, HScore, Acc, 0, 0, 0),
+					       evalVert(Board, Player, VScore, Acc, 0, 0, 0),
+					       evalLeftDiag(Board, Player, LDScore, Acc, 0, 0, 0),
+					       evalRightDiag(Board, Player, RDScore, Acc, 0, 0, 0),
+					       NewScore is Score + HScore + VScore + LDScore + RDScore,
+					       NewAcc is Acc + 1,
+					       evalBoard(Board, T, Player, NewScore, NewAcc).
+
+evalHori(_, _, HScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, HScore).
+evalHori(Board, Player, HScore, Index, Acc, PlyCount, OppCount) :- mod(Index, 11) =< 6,
+						      		   not(isPosEmpty(Board, Index)),
+								   nth0(Index, Board, Elem),
+						      		   NewAcc is Acc + 1,
+						      		   NewIndex is Index + 1,
+								   (
+								   Elem == Player
+							   		->
+									NewPlyCount is PlyCount + 1,
+									evalHori(Board, Player, HScore, NewIndex, NewAcc, NewPlyCount, OppCount)
+								   	;
+									NewOppCount is OppCount + 1,
+									evalHori(Board, Player, HScore, NewIndex, NewAcc, PlyCount, NewOppCount)
+								   ).
+evalHori(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :- NewIndex is Index + 1,
+								   NewAcc is Acc + 1,
+								   evalHori(Board, Player, VScore, NewIndex, NewAcc, PlyCount, OppCount).
+
+evalVert(_, _, VScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, VScore).
+evalVert(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :- Index =< 76,
+						      		   not(isPosEmpty(Board, Index)),
+								   nth0(Index, Board, Elem),
+						      		   NewAcc is Acc + 1,
+						      		   NewIndex is Index + 11,
+								   (
+								   Elem == Player
+							   		->
+									NewPlyCount is PlyCount + 1,
+									evalVert(Board, Player, VScore, NewIndex, NewAcc, NewPlyCount, OppCount)
+								   	;
+									NewOppCount is OppCount + 1,
+									evalVert(Board, Player, VScore, NewIndex, NewAcc, PlyCount, NewOppCount)
+								   ).
+
+evalLeftDiag(_, _, LDScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, LDScore).
+evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :- Index =< 76,
+									mod(Index, 11) >= 4,
+						      		   	not(isPosEmpty(Board, Index)),
+								   	nth0(Index, Board, Elem),
+						      		   	NewAcc is Acc + 10,
+						      		   	NewIndex is Index + 1,
+								   	(
+								   	Elem == Player
+							   			->
+										NewPlyCount is PlyCount + 1,
+										evalLeftDiag(Board, Player, LDScore, NewIndex, NewAcc, NewPlyCount, OppCount)
+								   		;
+										NewOppCount is OppCount + 1,
+										evalLeftDiag(Board, Player, LDScore, NewIndex, NewAcc, PlyCount, NewOppCount)
+								   	).
+
+evalRightDiag(_, _, RDScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, RDScore).
+evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :- Index =< 76,
+									 mod(Index, 11) =< 6,
+						      		   	 not(isPosEmpty(Board, Index)),
+								   	 nth0(Index, Board, Elem),
+						      		   	 NewAcc is Acc + 1,
+						      		   	 NewIndex is Index + 12,
+								   	 (
+								   	 Elem == Player
+							   		 	->
+										NewPlyCount is PlyCount + 1,
+										evalRightDiag(Board, Player, RDScore, NewIndex, NewAcc, NewPlyCount, OppCount)
+								   		;
+										NewOppCount is OppCount + 1,
+										evalRightDiag(Board, Player, RDScore, NewIndex, NewAcc, PlyCount, NewOppCount)
+								   	 ).
+
 %%%% Recursive predicate that checks if all the elements of the List (a board) %%%% are instanciated: true e.g. for [x,x,o,o,x,o,x,x,o] false for [x,x,o,o,_G125,o,x,x,o]
+isPosEmpty(Board, Index) :- nth0(Index, Board, Elem), var(Elem).
+
 isBoardFull([]).
 isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
 
@@ -44,7 +122,7 @@ isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
 %%%% in the Board (an element which is an free variable).
 
 
-ia(Board, Index,_) :- repeat, Index is random(121), nth0(Index, Board, Elem), var(Elem), !.
+ia(Board, Index,_) :- repeat, Index is random(121), isPosEmpty(Board,Index), !.
 
 %%%% Old
 %parcours(Board,Index,Player) :- CurrentFloor=Board, parcours([CurrentFloor],0, Index,Player).
@@ -59,24 +137,21 @@ parcours([CurrentFloor|Q],120, Index, Player,Size):- Size>2,NewSize is Size-1,!,
 %parcours(Floors,X,Index,Player):- boardFloors(Board),length(Board, Length),Length<2,retract(boardFloors([Board]).
 
 ia2(Board,Index,Player) :-parcours(Board,Index,Player).
-ia2(Board,Index,_) :-ia(Board,Index,_). 
+ia2(Board,Index,_) :-ia(Board,Index,_).
 
+human(Board, Index,_) :- repeat,
+			 write('C: '),
+			 read(MoveC),
+			 write('R: '),
+			 read(MoveR),
+			 Index is MoveC + 11 * MoveR,
+			 nth0(Index, Board, Elem),
+			 var(Elem),
+			 !.
 
-
-human(Board, Index,_) :- repeat, 
-						 write('C: '), 
-						 read(MoveC),
-						 write('R: '),
-						 read(MoveR),
-						 Index is MoveC + 11 * MoveR,
-						 nth0(Index, Board, Elem),
-						 var(Elem),
-						 !.
-
-
-%%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner board. 
+%%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner board.
 playHuman:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
-playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciate the board from the knowledge base     
+playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciate the board from the knowledge base
             displayBoard, % print it
 			%human(Board, Move, 'x'),
 			ia2(Board, Move, 'x'),
@@ -86,8 +161,8 @@ playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciat
 
 
 playAI:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
-playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the board from the knowledge base     
-            displayBoard, % print it 
+playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the board from the knowledge base
+            displayBoard, % print it
             ia(Board, Move, 'o'),
             playMove(Board, Move,NewBoard,'o'), % Play the move and get the result in a new Board
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one
@@ -113,15 +188,15 @@ displayBoard :-
 	writeln('  C 0 1 2 3 4 5 6 7 8 9 10'),
 	writeln(' R *----------------------*'),
 	write(' 0 |'), printRow(0), writeln('|'),
-	write(' 1 |'),printRow(1), writeln('|'),
-	write(' 2 |'),printRow(2), writeln('|'),
-	write(' 3 |'),printRow(3), writeln('|'),
-	write(' 4 |'),printRow(4), writeln('|'),
-	write(' 5 |'),printRow(5), writeln('|'),
-	write(' 6 |'),printRow(6), writeln('|'),
-	write(' 7 |'),printRow(7), writeln('|'),
-	write(' 8 |'),printRow(8), writeln('|'),
-	write(' 9 |'),printRow(9), writeln('|'),
+	write(' 1 |'), printRow(1), writeln('|'),
+	write(' 2 |'), printRow(2), writeln('|'),
+	write(' 3 |'), printRow(3), writeln('|'),
+	write(' 4 |'), printRow(4), writeln('|'),
+	write(' 5 |'), printRow(5), writeln('|'),
+	write(' 6 |'), printRow(6), writeln('|'),
+	write(' 7 |'), printRow(7), writeln('|'),
+	write(' 8 |'), printRow(8), writeln('|'),
+	write(' 9 |'), printRow(9), writeln('|'),
 	write('10 |'), printRow(10), writeln('|'),
 	writeln('   *----------------------*').
 
