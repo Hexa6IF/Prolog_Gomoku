@@ -1,9 +1,6 @@
 
-% The game state will be represented by a list of 9 elements
+% The game state will be represented by a list of 121 elements
 % board(_,_,_,_,_,_,_,_,_) at the beginning
-% eg board(_,_,'x',_,_,_,_,_,_) after the first round
-% eg board(_,_,'x',_,_,_,'o',_,_) after the second round
-% ...
 % until someone wins or the board is fully instanciated
 
 :- dynamic board/1.
@@ -14,10 +11,10 @@ gameover('Draw') :- board(Board), isBoardFull(Board). % the Board is fully insta
 
 %%%% Test if a Board is a winning configuration for the player P.
 
-aligned(Board, [T|_], Player, A, C) :- A=<76, nonvar(T),vertWinner(Board, A, Player, 0, C).
-aligned(Board, [T|_], Player, A, C) :- mod(A, 11)=<6, nonvar(T),horiWinner(Board, A, Player, 0, C).
-aligned(Board, [T|_], Player, A, C) :- A=<76, mod(A, 11)>=4, nonvar(T),leftDiagWinner(Board, A, Player, 0, C).
-aligned(Board, [T|_], Player, A, C) :- A=<72, mod(A, 11)=<6, nonvar(T),rightDiagWinner(Board, A, Player, 0, C).
+aligned(Board, [T|_], Player, A, C) :- A=<131- 11*C, nonvar(T),vertWinner(Board, A, Player, 0, C).
+aligned(Board, [T|_], Player, A, C) :- mod(A, 11)=<11-C, nonvar(T),horiWinner(Board, A, Player, 0, C).
+aligned(Board, [T|_], Player, A, C) :- A=<131- 11*C, mod(A, 11)>=C-1, nonvar(T),leftDiagWinner(Board, A, Player, 0, C).
+aligned(Board, [T|_], Player, A, C) :- A=<132-12*C, mod(A, 11)=<11-C, nonvar(T),rightDiagWinner(Board, A, Player, 0, C).
 aligned(Board, [_|Q], Player, A, C) :- NewA is A+1, aligned(Board, Q, Player, NewA, C).
 
 vertWinner(_ , _ , _, Y, Y).
@@ -59,12 +56,12 @@ parcours([CurrentFloor|Q],120, Index, Player,Size):- Size>2,NewSize is Size-1,!,
 %parcours(Floors,X,Index,Player):- boardFloors(Board),length(Board, Length),Length<2,retract(boardFloors([Board]).
 
 ia2(Board,Index,Player) :-parcours(Board,Index,Player).
-ia2(Board,Index,_) :-ia(Board,Index,_). 
+ia2(Board,Index,_) :-ia(Board,Index,_).
 
 
 
-human(Board, Index,_) :- repeat, 
-						 write('C: '), 
+human(Board, Index,_) :- repeat,
+						 write('C: '),
 						 read(MoveC),
 						 write('R: '),
 						 read(MoveR),
@@ -74,21 +71,21 @@ human(Board, Index,_) :- repeat,
 						 !.
 
 
-%%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner board. 
+%%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner board.
 playHuman:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
-playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciate the board from the knowledge base     
+playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciate the board from the knowledge base
             displayBoard, % print it
-			%human(Board, Move, 'x'),
-			ia2(Board, Move, 'x'),
+			human(Board, Move, 'x'),
+			%ia(Board, Move, 'x'),
             playMove(Board,Move,NewBoard,'x'), % Play the move and get the result in a new Board
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one
 			playAI. % next turn!
 
 
 playAI:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
-playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the board from the knowledge base     
-            displayBoard, % print it 
-            ia(Board, Move, 'o'),
+playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the board from the knowledge base
+            displayBoard, % print it
+            ia2(Board, Move, 'o'),
             playMove(Board, Move,NewBoard,'o'), % Play the move and get the result in a new Board
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one
 			playHuman. % next turn!
