@@ -24,12 +24,12 @@ leftDiagWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E
 rightDiagWinner(_ ,_ ,_ , Y, Y).
 rightDiagWinner(Board, X, E, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Board, E),  NewA is A+1, NewX is X+12, rightDiagWinner(Board, NewX, E, NewA, Y).
 
-getScore(1, 0, Score) :- Score = 250.
-getScore(2, 0, Score) :- Score = 500.
-getScore(3, 0, Score) :- Score = 1000.
-getScore(4, 0, Score) :- Score = 5000.
-getScore(5, 0, Score) :- Score = 10000.
-getScore(_, _, Score) :- Score = 0.
+getScore(1, 0, 250).
+getScore(2, 0, 500).
+getScore(3, 0, 1000).
+getScore(4, 0, 5000).
+getScore(5, 0, 10000).
+getScore(_, _, 0).
 
 evalBoard(_, _, _, _, 121).
 evalBoard(Board, [H|T], Player, Score, Acc) :- evalHori(Board, Player, HScore, Acc, 0, 0, 0),
@@ -40,9 +40,10 @@ evalBoard(Board, [H|T], Player, Score, Acc) :- evalHori(Board, Player, HScore, A
 					       NewAcc is Acc + 1,
 					       evalBoard(Board, T, Player, NewScore, NewAcc).
 
-evalHori(_, _, HScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, HScore).
+evalHori(_, _, HScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, HScore), !.
 evalHori(Board, Player, HScore, Index, Acc, PlyCount, OppCount) :- mod(Index, 11) =< 6,
-						      		   not(isPosEmpty(Board, Index)),
+								   not(isPosEmpty(Board, Index)),
+						      		   writeln(Acc),
 								   nth0(Index, Board, Elem),
 						      		   NewAcc is Acc + 1,
 						      		   NewIndex is Index + 1,
@@ -57,6 +58,7 @@ evalHori(Board, Player, HScore, Index, Acc, PlyCount, OppCount) :- mod(Index, 11
 								   ).
 evalHori(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :- NewIndex is Index + 1,
 								   NewAcc is Acc + 1,
+								   writeln('here'),
 								   evalHori(Board, Player, VScore, NewIndex, NewAcc, PlyCount, OppCount).
 
 evalVert(_, _, VScore, _, 5, PlyCount, OppCount) :- getScore(PlyCount, OppCount, VScore).
