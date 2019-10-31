@@ -31,9 +31,10 @@ playHuman :-
     board(Board), % instanciate the board from the knowledge base
     displayBoard, % print it
     human(Board, Move, x),
-    playMove(Board, Move, NewBoard, x),
+    playMove(Move, x, Board, NewBoard),
     applyIt(Board, NewBoard),
     playAI. % next turn!
+
 playAI :-
     gameover(Winner),
     !,
@@ -47,7 +48,7 @@ playAI :-
     writeln('AI'),
     board(Board), % instanciate the board from the knowledge base
     displayBoard, % print it
-    ia3(Board, Move, o),
-    playMove(Board, Move, NewBoard, o),
+    i3(Board, Move, o),
+    playMove(Move, o, Board, NewBoard),
     applyIt(Board, NewBoard),
     playHuman. % next turn!

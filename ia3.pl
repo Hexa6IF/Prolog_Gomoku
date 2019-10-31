@@ -21,18 +21,15 @@ getPossibleMoves(Board, Moves, AllMoves, Acc) :-
 %%%%% Get the best move for the given player for a given state of the board
 findBestMove(Board, Player, BestMove) :-
     getPossibleMoves(Board, [], AllMoves, 0),
-    minmax(Player, AllMoves,  (nil, -1000), BestMove).
+    minmax(Board, Player, AllMoves,  (nil, -1000), BestMove).
 
 %%%%% Recursive MinMax algorithm to find the explore all possible moves and get the best move for the player
-minmax(_, [],  (BestMove, _), BestMove).
-minmax(Player, [Move|Moves], CurrBest, BestMove) :-
-	board(Board),
-	nth0(Move, Board, Player),
-    evalBoard(Board, Player, 0, BoardScore, 0),
+minmax(_, _, [],  (BestMove, _), BestMove).
+minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :-
+	playMove(Move, Player, Board, NewBoard),
+    evalBoard(NewBoard, Player, 0, BoardScore, 0),
 	compareMove(Move, BoardScore, CurrBest, UpdatedBest),
-	nth0(Move, Board, _),
-	nth0(Move, Board, Player),
-    minmax(Player, Moves, UpdatedBest, BestMove),
+    minmax(Board, Player, Moves, UpdatedBest, BestMove),
     !.
 
 %%%%% Compare a given move to the current best move and swap if necessary
