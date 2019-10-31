@@ -66,11 +66,22 @@ winningMove([CurrentFloor|Q],120, Index, Player,Size):- Size>2,NewSize is Size-1
 ia2(Board,Index,Player) :- winningMove(Board,Index,Player).
 ia2(Board,Index,_) :-ia(Board,Index,_). 
 
-% ia qui évalue les gains de chaque position
+%%%% ia qui évalue les gains de chaque position
 
-ia3(Board,Index,Player) :- gainStep(Player,1,_,Board).
+% ia3(Board,Index,Player) :- gainStep(Player,1,_,Board).
 
 %%%% /!\ Chercher les possibilités d'utiliser les prédicats INCLUDE, MAPLIST, etc.. https://www.swi-prolog.org/pldoc/man?section=apply 
+
+%%%% Selectionne tous les indices d'une liste qui correspondent au min ou au max, selon la stratégie.
+selectBest(Indices,List,Max,max) :- selectMax(Indices,List,Max).
+selectBest(Indices,List,Min,min) :- selectMin(Indices,List,Min).
+
+%%%% Selectionne tous les indices d'une liste qui correspondent au min.
+selectMin(Indices,List,Min) :- min_list(List, Min), selectMin(Indices,List, Min,0).
+selectMin([],[],_,_).
+selectMin([X|Indices],[Min|List],Min,X) :- incr1(X,NewX), selectMin(Indices,List,Min,NewX).
+selectMin(Indices,[_|List],Min,X) :- incr1(X,NewX), selectMin(Indices,List,Min,NewX).
+
 %%%% Selectionne tous les indices d'une liste qui correspondent au max.
 selectMax(Indices,List,Max) :- max_list(List, Max), selectMax(Indices,List, Max,0).
 selectMax([],[],_,_).
@@ -83,41 +94,70 @@ selectVar(List,[],A) :-  length(List,A).
 selectVar(List,[X|Vars],A) :-  nth0(A,List,Elem), var(Elem), X=A, incr1(A,NewA), selectVar(List,Vars,NewA).
 selectVar(List,Vars,A) :-  incr1(A,NewA), selectVar(List,Vars,NewA).
 
-%%%% incremente X en NewX et l'initialise si dans le cas où X est une variable.
-incr1(X,NewX) :-  NewX is X+1,nonvar(X).
+%%%% incremente X en NewX et l'initialise si dans le cas où X et NewX sont des variable, permet aussi de décrementer.
+incr1(X,NewX) :- nonvar(X),NewX is X+1.
+incr1(X,NewX) :- nonvar(NewX),X is NewX-1.
 incr1(0,1).
 
-%%%% fonctions dont on remplace l'ordre des arguments
+%%%% Predicats dont on remplace l'ordre des arguments
 fakenth0(List,Index,Elem) :- nth0(Index,List,Elem).
-fakeplayMove(Board,Player,Move,NewBoard) :- playMove(Board,Move,NewBoard,Player)
 
-% Ordre : On appelle gain step, qui appelle gain move en l'initialisant à 0, gain move va calculer pour chaque coup le bénéfice apporté par la position après le coup, il le fait pour tout les coups d'une profondeur, puis appelle gain step avec la prochaine profondeur et l'autre joueur. Une fois arrivé à la dernière profondeur explorée, gain move ajoute la moyenne
+%%%% Joue plusieurs coups d'affiler
+playMoves(Board,_,[],Board).
+playMoves(Board,Player,[[]|Moves],FinalBoard) :-			% Si le coup à jouer est une liste vide, on passe
+			playMoves(Board,Player,Moves,FinalBoard).
+playMoves(Board,Player,[Move|Moves],FinalBoard) :-
+			playMove(Board,Move,NewBoard,Player),
+			nextPlayer(Player,Opponent),
+			playMoves(NewBoard,Opponent,Moves,FinalBoard).
 
-gainStep(_,0,_,_). %  Il ne reste plus d'étages à tester 
-gainStep(Player,Height,Max,Board) :- 
+%%%% Transforme une liste en liste de liste
+encapsuler([],[]).
+encapsuler([X|Liste],[[X]|Reste]) :- encapsuler(Liste,Reste).
+
+%%%% EXPLORATEUR 
+%%%% [[],[CoupN1|[CoupN2],[CoupN2]],[CoupN1|[CoupN2]]]
+
+explore(Player,0,'max',CoupsPrecedent,[CoupExplore],[CoupExplore|CapsuleCoups],Max) :-
+            board(Board),                                                       % On récupère le plateau initial
+			playMoves(Board,Player,[CoupExplore|CoupsPrecedent],FinalBoard),    % Note : les coups sont joues dans l'ordre inverse mais ça ne pose pas de problèmes
+			calculMeilleurMoves(Player,FinalBoard,Max,ListeCoups),
+            encapsuler(ListeCoups,CapsuleCoups), !.
+
+explore(Player,Height,Strategy,CoupsPrecedent,[CoupExplore|ResteAJouer],[CoupExplore|ListMoves],Best) :- 
+            incr1(NewHeight,Height),
+            nextPlayer(Player,Opponent),
+			maplist(explore(Opponent,NewHeight,NewStrategy,[CoupExplore|CoupsPrecedent]),ResteAJouer,ListeCoupsN1,ListMax),
+            changeStrategy(NewStrategy,Strategy),
+			selectBest(Indices,ListMax,Best,Strategy), 								% On selectionne les meilleurs coups
+			maplist(fakenth0(ListeCoupsN1),Indices,ListMoves).
+
+%%%% Fonction pour tester le fonctionnement sur une profondeur de 3, à mettre dans un autre fonction récursive
+
+exploreTest :- assert(board([_,_,_,'x'])), Player = 'o', ResteAJouer = [], explore(Player,0,_,[],[[]|ResteAJouer],ListeCoups,Max), writeln(ListeCoups),writeln(Max), explore(Player,1,_,[],ListeCoups,ListeCoups2,Max2), writeln(ListeCoups2),writeln(Max2),explore(Player,2,_,[],ListeCoups2,ListeCoups3,Max3), writeln(ListeCoups3),writeln(Max3).
+
+%%%%  Pour une position de plateau donnee, retourne le gain maximum et la liste des coups associés.
+
+calculMeilleurMoves(Player,Board,Max,ListMoves) :- 
 			selectVar(Board,PossibleMoves),
 			length(PossibleMoves,NumberOfMoves),
 			length(Gain,NumberOfMoves),
-			maplist(gainMove(Board,Player),PossibleMoves,Gain), % On teste les gains pour chaque coup. Note : Maplist ajoute les arguments à la fin et dans l'ordre
-			%%% A METTRE DANS UNE AUTRE FONCTION EN RECURSIF
+			maplist(heuristic(Board,Player),PossibleMoves,Gain), % On teste les gains pour chaque coup. Note : Maplist ajoute les arguments à la fin et dans l'ordre 
 			selectMax(Indices,Gain,Max), 								% On selectionne les meilleurs coups
-			maplist(fakenth0(PossibleMoves),Indices,NewPossibleMoves),  
-																		% Pour les coups possibles, on va chercher celui ou le gain possible de l'adversaire est le plus petit
-			nextPlayer(Player,Opponent),								
-			incr1(NewHeight,Height), 									% On réduit de 1 le nombre d'étage à tester
-			maplist(playMove(Board,Player),NewPossibleMoves,NewBoards), % A faire : Ajouter une liste des gain par étage. S'enfoncer au fur et à mesure (profondeur x, selectionner l'enchaînement de coups, profondeur suivante).
-			maplist(gainStep(Opponent,NewHeight),ListMaxOpponent,NewBoards),
-			selectMin(IndicesMin,ListMaxOpponent,Min), 
-			
-			%GainPlayer is (NewGainPlayer+NextGainPlayer)/2,
-			%GainOpponent is (NewGainOpponent+NextGainOpponent)/2.
+			maplist(fakenth0(PossibleMoves),Indices,ListMoves).
 
-gainMove(_,_,_,1). % Provisoire, n'importe quel coup a un gain de 1
+heuristic(_,_,_,1). % Provisoire, n'importe quel coup a un gain de 1
+% heuristic(Board,Player,Move,Gain). % PREDICAT A MODIFIER 
 
 %%%% Tell who is the next player
 
 nextPlayer('o','x').
 nextPlayer('x','o').
+
+%%%% Swap strategy
+
+changeStrategy('min','max').
+changeStrategy('max','min').
 
 human(Board, Index,_) :- repeat, 
 						 write('C: '), 
