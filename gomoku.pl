@@ -36,14 +36,6 @@ rightDiagWinner(Board, X, Winner, A, Y) :- not(nth0(X, Board, 'var')),nth0(X, Bo
 isBoardFull([]).
 isBoardFull([H|T]):- nonvar(H), isBoardFull(T).
 
-%%%% Test if a Move is a interesting configuration for the ai.
-
-%localAligned(Board,Move,Length):- vertWinner()
-%localAligned(Board,Move,Length):-
-%localAligned(Board,Move,Length):-
-%localAligned(Board,Move,Length):-
-%localAligned(Board,Move,Length):-
-
 %%%% Artificial intelligence: choose in a Board the index to play for Player (_)
 %%%% This AI plays randomly and does not care who is playing: it chooses a free position
 %%%% in the Board (an element which is an free variable).
@@ -134,7 +126,16 @@ explore(Player,Height,Strategy,CoupsPrecedent,[CoupExplore|ResteAJouer],[CoupExp
 
 %%%% Fonction pour tester le fonctionnement sur une profondeur de 3, à mettre dans un autre fonction récursive
 
-exploreTest :- assert(board([_,_,_,'x'])), Player = 'o', ResteAJouer = [], explore(Player,0,_,[],[[]|ResteAJouer],ListeCoups,Max), writeln(ListeCoups),writeln(Max), explore(Player,1,_,[],ListeCoups,ListeCoups2,Max2), writeln(ListeCoups2),writeln(Max2),explore(Player,2,_,[],ListeCoups2,ListeCoups3,Max3), writeln(ListeCoups3),writeln(Max3).
+exploreTest :- assert(board([_,_,_,_,_,_,_,_,_])), Player = 'o', ResteAJouer = [], 
+			explore(Player,0,_,[],[[]|ResteAJouer],ListeCoups,Max), writeln(ListeCoups),writeln(Max),
+			explore(Player,1,_,[],ListeCoups,ListeCoups2,Max2), writeln(ListeCoups2),writeln(Max2),
+			explore(Player,2,_,[],ListeCoups2,ListeCoups3,Max3), writeln(ListeCoups3),writeln(Max3),
+			explore(Player,3,_,[],ListeCoups3,ListeCoups4,Max4), writeln(ListeCoups4),writeln(Max4),
+			explore(Player,4,_,[],ListeCoups4,ListeCoups5,Max5), writeln(ListeCoups5),writeln(Max5),
+			explore(Player,5,_,[],ListeCoups5,ListeCoups6,Max6), writeln(ListeCoups6),writeln(Max6),
+			explore(Player,6,_,[],ListeCoups6,ListeCoups7,Max7), writeln(ListeCoups7),writeln(Max7),
+			explore(Player,7,_,[],ListeCoups7,ListeCoups8,Max8), writeln(ListeCoups8),writeln(Max8),
+			explore(Player,8,_,[],ListeCoups8,ListeCoups9,Max9), writeln(ListeCoups9),writeln(Max9).
 
 %%%%  Pour une position de plateau donnee, retourne le gain maximum et la liste des coups associés.
 
@@ -146,8 +147,19 @@ calculMeilleurMoves(Player,Board,Max,ListMoves) :-
 			selectMax(Indices,Gain,Max), 								% On selectionne les meilleurs coups
 			maplist(fakenth0(PossibleMoves),Indices,ListMoves).
 
-heuristic(_,_,_,1). % Provisoire, n'importe quel coup a un gain de 1
-% heuristic(Board,Player,Move,Gain). % PREDICAT A MODIFIER 
+%%%% heuristique de test pour un jeu de morpion : valeur de 1 si il y a une config gagnate, 0 sinon
+
+winner(Board, P) :- Board = [P,Q,R,_,_,_,_,_,_], P==Q, Q==R, nonvar(P). % first row
+winner(Board, P) :- Board = [_,_,_,P,Q,R,_,_,_], P==Q, Q==R, nonvar(P). % second row
+winner(Board, P) :- Board = [_,_,_,_,_,_,P,Q,R], P==Q, Q==R, nonvar(P). % third row
+winner(Board, P) :- Board = [P,_,_,Q,_,_,R,_,_], P==Q, Q==R, nonvar(P). % first column
+winner(Board, P) :- Board = [_,P,_,_,Q,_,_,R,_], P==Q, Q==R, nonvar(P). % second column
+winner(Board, P) :- Board = [_,_,P,_,_,Q,_,_,R], P==Q, Q==R, nonvar(P). % third column
+winner(Board, P) :- Board = [P,_,_,_,Q,_,_,_,R], P==Q, Q==R, nonvar(P). % first diagonal
+winner(Board, P) :- Board = [_,_,P,_,Q,_,R,_,_], P==Q, Q==R, nonvar(P). % second diagonal
+
+heuristic(Board,Player,Move,1) :- playMove(Board,Move,NewBoard,Player),winner(NewBoard,Player).
+heuristic(_,_,_,0).
 
 %%%% Tell who is the next player
 
