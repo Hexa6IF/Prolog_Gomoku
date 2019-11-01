@@ -30,17 +30,18 @@ minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :-
     evalBoard(NewBoard, Player, 0, BoardScore, 0),			% Evaluates the board after the move
 	changePlayer(Player, Opponent),
 	getPossibleMoves(NewBoard, [], OppMoves, 0),			% Repeats procedure for opponent
-	maxmin(NewBoard, Opponent, OppMoves, (nil, -1000), OppBestScore, OppBestMove),
-	Difference is BoardScore - OppBestScore,
+	maxmin(NewBoard, Opponent, OppMoves, (nil, -1000), OppBestScore, _),
+    Difference is BoardScore - OppBestScore,
 	compareMove(Move, Difference, CurrBest, UpdatedBest),	% Compares to the current best move
     minmax(Board, Player, Moves, UpdatedBest, BestMove),
     !.
 
+maxmin(_, _, [],  (BestMove, BestScore),BestScore, BestMove).
 maxmin(Board, Player, [Move|Moves], CurrBest, BestScore, BestMove) :-
 	playMove(Move, Player, Board, NewBoard), 				% Plays a 'test' move
     evalBoard(NewBoard, Player, 0, BoardScore, 0),			% Evaluates the board after the move
 	compareMove(Move, BoardScore, CurrBest, UpdatedBest),	% Compares to the current best move
-    maxmin(Board, Player, Moves, UpdatedBest, BestMove),
+    maxmin(Board, Player, Moves, UpdatedBest, BestScore, BestMove),
 	!.
 
 %%%%% Compare a given move to the current best move and swap if necessary

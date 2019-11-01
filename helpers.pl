@@ -12,6 +12,11 @@ isPosEmpty(Board, Index) :-
     nth0(Index, Board, Elem),
     var(Elem).
 
+
+%%%% Change player
+changePlayer(x, o).
+changePlayer(o, x).
+
 %%%%% Recursive predicate that checks if all the elements of the board are instanciated
 isBoardFull([]).
 isBoardFull([H|T]) :-
