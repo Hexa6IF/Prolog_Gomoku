@@ -26,6 +26,11 @@ findBestMove(Board, Player, BestMove) :-
 %%%%% Recursive MinMax algorithm to find the explore all possible moves and get the best move for the player
 minmax(_, _, [],  (BestMove, _), BestMove).
 minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :-
+    length(Moves, Taille),
+    writeln(Taille),
+    writeln(Move),
+    writeln('-------------'),
+    integer(Move),
 	playMove(Move, Player, Board, NewBoard), 				% Plays a 'test' move
     evalBoard(NewBoard, Player, 0, BoardScore, 0),			% Evaluates the board after the move
 	changePlayer(Player, Opponent),
