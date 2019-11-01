@@ -31,12 +31,9 @@ minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :-
 	getPossibleMoves(NewBoard, [], OppMoves, 0),			% Repeats procedure for opponent
 	maxmin(NewBoard, Opponent, OppMoves, (nil, -inf), OppBestScore, OppBestMove),
 	playMove(OppBestMove, Opponent, NewBoard, FinalBoard),
-	evalBoard(FinalBoard, Player, 0, BoardScore, 0),			% Evaluates the board after the move
-	OppFactor is (OppBestScore*10),
+	evalBoard(FinalBoard, Player, BoardScore),			% Evaluates the board after the move
+	OppFactor is (OppBestScore),
 	Difference is BoardScore - OppFactor,
-	write(Move), write(' '), writeln(BoardScore),
-	write(OppBestMove), write(' '), writeln(OppBestScore),
-	writeln('----'),
 	compareMove(Move, Difference, CurrBest, UpdatedBest),	% Compares to the current best move
     minmax(Board, Player, Moves, UpdatedBest, BestMove),
     !.
@@ -44,7 +41,7 @@ minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :-
 maxmin(_, _, [],  (BestMove, BestScore),BestScore, BestMove).
 maxmin(Board, Player, [Move|Moves], CurrBest, BestScore, BestMove) :-
 	playMove(Move, Player, Board, NewBoard), 				% Plays a 'test' move
-    evalBoard(NewBoard, Player, 0, BoardScore, 0),			% Evaluates the board after the move
+    evalBoard(NewBoard, Player, BoardScore),			% Evaluates the board after the move
 	compareMove(Move, BoardScore, CurrBest, UpdatedBest),	% Compares to the current best move
     maxmin(Board, Player, Moves, UpdatedBest, BestScore, BestMove),
 	!.
@@ -62,7 +59,7 @@ getScore(2, 0, 10) :-
     !.
 getScore(3, 0, 10000) :-
     !.
-getScore(4, 0, 100000000) :- writeln('boooo'),
+getScore(4, 0, 100000000) :-
     !.
 getScore(5, 0, 10000000000000) :-
     !.
@@ -72,7 +69,7 @@ getScore(0, 4, -100000000) :-
 	!.
 getScore(0, 5, -1000000000000) :-
 	!.
-getScore(4, 1, -10000000000) :- writeln('beep boop'),
+getScore(4, 1, -10000000000) :-
 	!.
 getScore(3, 1, -10000000) :-
 	!.
@@ -91,11 +88,12 @@ incrementCount(_, _, PlyCount, OppCount, NewPlyCount, NewOppCount) :-
     NewOppCount is OppCount+1.
 
 %%%%% Recursively calculate the total value of a given state of the board to the player
-evalBoard(_, _, Score, Score, 121).
-evalBoard(Board, Player, AccScore, BoardScore, Acc) :-
-    NewAccScore is AccScore+HScore+VScore+LDScore+RDScore,
-    NewAcc is Acc+1,
-    evalBoard(Board, Player, NewAccScore, BoardScore, NewAcc),
+evalBoard(Board, Player, BoardScore) :-
+    evalBoardHori(Board, Player, 0, TotalHScore, 0),
+    evalBoardVert(Board, Player, 0, TotalVScore, 0), 
+    evalBoardLeftDiag(Board, Player, 0, TotalLDScore, 0),
+    evalBoardRightDiag(Board, Player, 0, TotalRDScore, 0), 
+    BoardScore is TotalHScore+TotalVScore+TotalLDScore+TotalRDScore,
     !.
 
 evalBoardHori(_, _, TotalScore, TotalScore, 121).
@@ -106,22 +104,22 @@ evalBoardHori(Board, Player, AccScore, TotalHScore, Acc) :-
 	NewAcc is Acc + 1,
 	evalBoardHori(Board, Player, NewAccScore, TotalHScore, NewAcc),
 	!.
-evalBoardHori(Board, Player, NewAccScore, TotalHScore, NewAcc) :-
+evalBoardHori(Board, Player, AccScore, TotalHScore, Acc) :-
 	NewAcc is Acc + 1,
-	evalBoardHori(Board, Player, NewAccScore, TotalHScore, NewAcc),
+	evalBoardHori(Board, Player, AccScore, TotalHScore, NewAcc),
 	!.
 
 evalBoardVert(_, _, TotalScore, TotalScore, 121).
-evalBoardVert(Board, Player, AccScore, TotalHScore, Acc) :-
+evalBoardVert(Board, Player, AccScore, TotalVScore, Acc) :-
 	Acc=<76,
     evalVert(Board, Player, VScore, Acc, 0, 0, 0),
 	NewAccScore is AccScore + VScore,
 	NewAcc is Acc + 1,
 	evalBoardVert(Board, Player, NewAccScore, TotalVScore, NewAcc),
 	!.
-evalBoardVert(Board, Player, NewAccScore, TotalVScore, NewAcc) :-
+evalBoardVert(Board, Player, AccScore, TotalVScore, Acc) :-
 	NewAcc is Acc + 1,
-	evalBoardVert(Board, Player, NewAccScore, TotalVScore, NewAcc),
+	evalBoardVert(Board, Player, AccScore, TotalVScore, NewAcc),
 	!.
     
 evalBoardLeftDiag(_, _, TotalScore, TotalScore, 121).
@@ -133,9 +131,9 @@ evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, Acc) :-
 	NewAcc is Acc + 1,
 	evalBoardLeftDiag(Board, Player, NewAccScore, TotalLDScore, NewAcc),
 	!.
-evalBoardLeftDiag(Board, Player, NewAccScore, TotalLDScore, NewAcc) :-
+evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, Acc) :-
 	NewAcc is Acc + 1,
-	evalBoardLeftDiag(Board, Player, NewAccScore, TotalLDScore, NewAcc),
+	evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, NewAcc),
 	!.
 
 evalBoardRightDiag(_, _, TotalScore, TotalScore, 121).
@@ -147,9 +145,9 @@ evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, Acc) :-
 	NewAcc is Acc + 1,
 	evalBoardRightDiag(Board, Player, NewAccScore, TotalRDScore, NewAcc),
 	!.
-evalBoardRightDiag(Board, Player, NewAccScore, TotalRDScore, NewAcc) :-
+evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, Acc) :-
 	NewAcc is Acc + 1,
-	evalBoardHori(Board, Player, NewAccScore, TotalRDScore, NewAcc),
+	evalBoardHori(Board, Player, AccScore, TotalRDScore, NewAcc),
 	!.
 
 %%%%% Recursively calculate the total value of a given state of the board to the player - horizontal alignements
