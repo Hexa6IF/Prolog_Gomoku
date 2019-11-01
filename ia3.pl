@@ -57,9 +57,9 @@ getScore(1, 0, 1) :-
     !.
 getScore(2, 0, 10) :-
     !.
-getScore(3, 0, 10000) :-
+getScore(3, 0, 100) :-
     !.
-getScore(4, 0, 100000000) :-
+getScore(4, 0, 1000) :-
     !.
 getScore(5, 0, 10000000000000) :-
     !.
