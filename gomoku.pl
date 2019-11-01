@@ -30,8 +30,8 @@ playHuman :-
     writeln('HOOMAN'),
     board(Board), % instanciate the board from the knowledge base
     displayBoard, % print it
-    human(Board, Move, x),
-    playMove(Move, x, Board, NewBoard),
+	human(Board, Move, x),
+	playMove(Move, x, Board, NewBoard),
     applyIt(Board, NewBoard),
     playAI. % next turn!
 
@@ -48,7 +48,7 @@ playAI :-
     writeln('AI'),
     board(Board), % instanciate the board from the knowledge base
     displayBoard, % print it
-    ia3(Board, Move, o),
+    ia2(Board, Move, o),
     playMove(Move, o, Board, NewBoard),
     applyIt(Board, NewBoard),
     playHuman. % next turn!
