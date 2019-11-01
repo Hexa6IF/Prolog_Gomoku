@@ -63,18 +63,18 @@ getScore(4, 0, 100000000) :-
     !.
 getScore(5, 0, 10000000000000) :-
     !.
-getScore(0, 3, -10000) :-
-	!.
-getScore(0, 4, -100000000) :-
-	!.
-getScore(0, 5, -1000000000000) :-
-	!.
-getScore(4, 1, -10000000000) :-
-	!.
-getScore(3, 1, -10000000) :-
-	!.
-getScore(3, 2, -10000000) :-
-	!.
+% getScore(0, 3, -10000) :-
+% 	!.
+%getScore(0, 4, -100000000) :-
+%	!.
+%getScore(0, 5, -1000000000000) :-
+%	!.
+%getScore(4, 1, -10000000000) :-
+%	!.
+%getScore(3, 1, -10000000) :-
+%	!.
+%getScore(3, 2, -10000000) :-
+%	!.
 getScore(_, _, 0) :-
     !.
 
@@ -90,9 +90,9 @@ incrementCount(_, _, PlyCount, OppCount, NewPlyCount, NewOppCount) :-
 %%%%% Recursively calculate the total value of a given state of the board to the player
 evalBoard(Board, Player, BoardScore) :-
     evalBoardHori(Board, Player, 0, TotalHScore, 0),
-    evalBoardVert(Board, Player, 0, TotalVScore, 0), 
+    evalBoardVert(Board, Player, 0, TotalVScore, 0),
     evalBoardLeftDiag(Board, Player, 0, TotalLDScore, 0),
-    evalBoardRightDiag(Board, Player, 0, TotalRDScore, 0), 
+    evalBoardRightDiag(Board, Player, 0, TotalRDScore, 0),
     BoardScore is TotalHScore+TotalVScore+TotalLDScore+TotalRDScore,
     !.
 
@@ -121,7 +121,7 @@ evalBoardVert(Board, Player, AccScore, TotalVScore, Acc) :-
 	NewAcc is Acc + 1,
 	evalBoardVert(Board, Player, AccScore, TotalVScore, NewAcc),
 	!.
-    
+
 evalBoardLeftDiag(_, _, TotalScore, TotalScore, 121).
 evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, Acc) :-
 	Acc=<76,
@@ -147,7 +147,7 @@ evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, Acc) :-
 	!.
 evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, Acc) :-
 	NewAcc is Acc + 1,
-	evalBoardHori(Board, Player, AccScore, TotalRDScore, NewAcc),
+	evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, NewAcc),
 	!.
 
 %%%%% Recursively calculate the total value of a given state of the board to the player - horizontal alignements
