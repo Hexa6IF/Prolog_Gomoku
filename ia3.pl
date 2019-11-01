@@ -121,38 +121,35 @@ evalBoardVert(Board, Player, AccScore, TotalHScore, Acc) :-
 	!.
 evalBoardVert(Board, Player, NewAccScore, TotalVScore, NewAcc) :-
 	NewAcc is Acc + 1,
-	evalBoardHori(Board, Player, NewAccScore, TotalVScore, NewAcc),
+	evalBoardVert(Board, Player, NewAccScore, TotalVScore, NewAcc),
+	!.
+    
+evalBoardLeftDiag(_, _, TotalScore, TotalScore, 121).
+evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, Acc) :-
+	Acc=<76,
+    Acc mod 11>=4,
+    evalLeftDiag(Board, Player, LDScore, Acc, 0, 0, 0),
+	NewAccScore is AccScore + LDScore,
+	NewAcc is Acc + 1,
+	evalBoardLeftDiag(Board, Player, NewAccScore, TotalLDScore, NewAcc),
+	!.
+evalBoardLeftDiag(Board, Player, NewAccScore, TotalLDScore, NewAcc) :-
+	NewAcc is Acc + 1,
+	evalBoardLeftDiag(Board, Player, NewAccScore, TotalLDScore, NewAcc),
 	!.
 
-evalBoardLeftDiag(Board, Player, AccScore, BoardScore, Acc) :-
-    Acc=<76,
-    Acc mod 11>=4,
-    evalLeftDiag(Board, Player, LDScore, Acc, 0, 0, 0).
-evalBoardHori(Board, Player, AccScore, TotalHScore, Acc) :-
-	Acc mod 11=<6,
-    evalHori(Board, Player, HScore, Acc, 0, 0, 0),
-	NewAccScore is AccScore + HScore,
-	NewAcc is Acc + 1,
-	evalBoardHori(Board, Player, NewAccScore, TotalHScore, NewAcc),
-	!.
-evalBoardHori(Board, Player, NewAccScore, TotalScore, NewAcc) :-
-	NewAcc is Acc + 1,
-	evalBoardHori(Board, Player, NewAccScore, TotalHScore, NewAcc),
-	!.
-evalBoardRightDiag(Board, Player, AccScore, BoardScore, Acc) :-
-    Acc=<76,
+evalBoardRightDiag(_, _, TotalScore, TotalScore, 121).
+evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, Acc) :-
+	Acc=<76,
     Acc mod 11=<6,
-    evalRightDiag(Board, Player, RDScore, Acc, 0, 0, 0).
-evalBoardHori(Board, Player, AccScore, TotalHScore, Acc) :-
-	Acc mod 11=<6,
-    evalHori(Board, Player, HScore, Acc, 0, 0, 0),
-	NewAccScore is AccScore + HScore,
+    evalRightDiag(Board, Player, RDScore, Acc, 0, 0, 0),
+	NewAccScore is AccScore + RDScore,
 	NewAcc is Acc + 1,
-	evalBoardHori(Board, Player, NewAccScore, TotalHScore, NewAcc),
+	evalBoardRightDiag(Board, Player, NewAccScore, TotalRDScore, NewAcc),
 	!.
-evalBoardHori(Board, Player, NewAccScore, TotalScore, NewAcc) :-
+evalBoardRightDiag(Board, Player, NewAccScore, TotalRDScore, NewAcc) :-
 	NewAcc is Acc + 1,
-	evalBoardHori(Board, Player, NewAccScore, TotalHScore, NewAcc),
+	evalBoardHori(Board, Player, NewAccScore, TotalRDScore, NewAcc),
 	!.
 
 %%%%% Recursively calculate the total value of a given state of the board to the player - horizontal alignements
