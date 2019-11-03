@@ -6,8 +6,10 @@ ia3(Board, Index, Player) :-
 %%%% Heuristic MinMax - Based on MinMax theory at 2 level depth
 
 %%%%% Get a list of all possible moves in a given state of the board
-getPossibleMoves(_, Moves, AllMoves, 121) :-
-    AllMoves=Moves.
+%getPossibleMoves(Board, Moves, AllMoves, BoardLength) :-
+getPossibleMoves(Board, AllMoves, AllMoves, BoardLength) :-
+    length(Board, BoardLength).
+    %AllMoves=Moves.
 getPossibleMoves(Board, Moves, AllMoves, Acc) :-
     NewAcc is Acc+1,
     isPosEmpty(Board, Acc),
@@ -96,9 +98,14 @@ evalBoard(Board, Player, BoardScore) :-
     BoardScore is TotalHScore+TotalVScore+TotalLDScore+TotalRDScore,
     !.
 
-evalBoardHori(_, _, TotalScore, TotalScore, 121).
+evalBoardHori(Board, _, TotalScore, TotalScore, BoardLength) :-
+    length(Board, BoardLength).
 evalBoardHori(Board, Player, AccScore, TotalHScore, Acc) :-
-	Acc mod 11=<6,
+    length(Board, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    RowLastIndex is BoardDimension-1-4, %%6=11-1-4
+    Acc mod BoardDimension=<RowLastIndex, 
+	%Acc mod 11=<6,
     evalHori(Board, Player, HScore, Acc, 0, 0, 0),
 	NewAccScore is AccScore + HScore,
 	NewAcc is Acc + 1,
@@ -109,7 +116,8 @@ evalBoardHori(Board, Player, AccScore, TotalHScore, Acc) :-
 	evalBoardHori(Board, Player, AccScore, TotalHScore, NewAcc),
 	!.
 
-evalBoardVert(_, _, TotalScore, TotalScore, 121).
+evalBoardVert(Board, _, TotalScore, TotalScore, BoardLength) :-
+    length(Board, BoardLength).
 evalBoardVert(Board, Player, AccScore, TotalVScore, Acc) :-
 	Acc=<76,
     evalVert(Board, Player, VScore, Acc, 0, 0, 0),
@@ -122,10 +130,16 @@ evalBoardVert(Board, Player, AccScore, TotalVScore, Acc) :-
 	evalBoardVert(Board, Player, AccScore, TotalVScore, NewAcc),
 	!.
 
-evalBoardLeftDiag(_, _, TotalScore, TotalScore, 121).
+evalBoardLeftDiag(Board, _, TotalScore, TotalScore, BoardLength) :-
+    length(Board, BoardLength).
 evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, Acc) :-
-	Acc=<76,
-    Acc mod 11>=4,
+    length(Board, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    LastIndex is BoardLength-4*BoardDimension-1, %% 76=11*11-4*11-1
+    Acc =< LastIndex, 
+	%Acc=<76,
+    Acc mod BoardDimension >=4,
+    %Acc mod 11>=4,
     evalLeftDiag(Board, Player, LDScore, Acc, 0, 0, 0),
 	NewAccScore is AccScore + LDScore,
 	NewAcc is Acc + 1,
@@ -136,10 +150,17 @@ evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, Acc) :-
 	evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, NewAcc),
 	!.
 
-evalBoardRightDiag(_, _, TotalScore, TotalScore, 121).
+evalBoardRightDiag(Board, _, TotalScore, TotalScore, BoardLength) :-
+    length(Board, BoardLength).
 evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, Acc) :-
-	Acc=<76,
-    Acc mod 11=<6,
+    length(Board, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    LastIndex is BoardLength-4*BoardDimension-1, %% 76=11*11-4*11-1
+    Acc =< LastIndex, 
+	%Acc=<76,
+    RowLastIndex is BoardDimension-1-4,
+    Acc mod BoardDimension=<RowLastIndex,
+    %Acc mod 11=<6,
     evalRightDiag(Board, Player, RDScore, Acc, 0, 0, 0),
 	NewAccScore is AccScore + RDScore,
 	NewAcc is Acc + 1,
@@ -194,7 +215,9 @@ evalVert(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :-
     not(isPosEmpty(Board, Index)),
     nth0(Index, Board, Elem),
     NewAcc is Acc+1,
-    NewIndex is Index+11,
+    length(Board, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    NewIndex is Index+BoardDimension,
     incrementCount(Player,
                    Elem,
                    PlyCount,
@@ -211,7 +234,9 @@ evalVert(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :-
 	!.
 evalVert(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :-
     Acc=<5,
-    NewIndex is Index+11,
+    length(Board, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    NewIndex is Index+BoardDimension,
     NewAcc is Acc+1,
     evalVert(Board,
              Player,
@@ -229,7 +254,10 @@ evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :-
     not(isPosEmpty(Board, Index)),
     nth0(Index, Board, Elem),
     NewAcc is Acc+1,
-    NewIndex is Index+10,
+    length(Board, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    NewIndex is Index+BoardDimension-1,
+    %NewIndex is Index+10,
     incrementCount(Player,
                    Elem,
                    PlyCount,
@@ -245,7 +273,10 @@ evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :-
                  NewOppCount).
 evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :-
     Acc=<5,
-    NewIndex is Index+10,
+    %NewIndex is Index+10,
+    length(Board, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    NewIndex is Index+BoardDimension-1,
     NewAcc is Acc+1,
     evalLeftDiag(Board,
                  Player,
@@ -263,7 +294,10 @@ evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :-
     not(isPosEmpty(Board, Index)),
     nth0(Index, Board, Elem),
     NewAcc is Acc+1,
-    NewIndex is Index+12,
+    %NewIndex is Index+12,
+    length(Board, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    NewIndex is Index+BoardDimension+1,
     incrementCount(Player,
                    Elem,
                    PlyCount,
@@ -279,7 +313,10 @@ evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :-
                   NewOppCount).
 evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :-
     Acc=<5,
-    NewIndex is Index+12,
+    %NewIndex is Index+12,
+    length(Board, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    NewIndex is Index+BoardDimension+1,
     NewAcc is Acc+1,
     evalRightDiag(Board,
                   Player,
