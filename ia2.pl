@@ -13,7 +13,9 @@ parcours([CurrentFloor|_], X, Index, Player, Size) :-
     nth0(X, CurrentFloor, Elem),
     var(Elem),
     nth0(X, CurrentFloor, Player),
-    aligned(CurrentFloor, CurrentFloor, Player, 0, Size),
+    length(CurrentFloor, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    aligned(CurrentFloor, CurrentFloor, Player, 0, Size, BoardLength, BoardDimension),
     Index is X,
     !.
 parcours([CurrentFloor|Q], X, Index, Player, Size) :-
