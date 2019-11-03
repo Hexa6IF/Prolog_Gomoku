@@ -24,50 +24,44 @@ aligned(Board, [T|_], Player, A, C, BoardLength, BoardDimension) :-
     LastIndex is BoardLength-4*BoardDimension-1, %% 76=11*11-4*11-1
     A =< LastIndex, 
     nonvar(T),
-    vertWinner(Board, A, Player, 0, C).
+    vertWinner(Board, A, Player, 0, C, BoardDimension).
 aligned(Board, [T|_], Player, A, C, _, BoardDimension) :-
     RowLastIndex is BoardDimension-1-4, %%6=11-1-4
     A mod BoardDimension=<RowLastIndex, 
     nonvar(T),
-    horiWinner(Board, A, Player, 0, C).
+    horiWinner(Board, A, Player, 0, C, BoardDimension).
 aligned(Board, [T|_], Player, A, C, BoardLength, BoardDimension) :-
     LastIndex is BoardLength-4*BoardDimension-1,
     A=<LastIndex,
     A mod BoardDimension>=4, 
     nonvar(T),
-    leftDiagWinner(Board, A, Player, 0, C).
+    leftDiagWinner(Board, A, Player, 0, C, BoardDimension).
 aligned(Board, [T|_], Player, A, C, BoardLength, BoardDimension) :-
     LastIndex is BoardLength-4*BoardDimension-1-4,
     A=<LastIndex, %%76-4
     RowLastIndex is BoardDimension-1-4,
     A mod BoardDimension=<RowLastIndex,
     nonvar(T),
-    rightDiagWinner(Board, A, Player, 0, C).
+    rightDiagWinner(Board, A, Player, 0, C, BoardDimension).
 aligned(Board, [_|Q], Player, A, C, BoardLength, BoardDimension) :-
     NewA is A+1,
     aligned(Board, Q, Player, NewA, C, BoardLength, BoardDimension).
 
 %%%%% Check vertical alignments
-vertWinner(Board, X, E, A, Y) :-
-    length(Board, BoardLength),
-    Bottom is round(sqrt(BoardLength)),
-    checkWinner(Board, X, E, A, Y, Bottom).
+vertWinner(Board, X, E, A, Y, BoardDimension) :-
+    checkWinner(Board, X, E, A, Y, BoardDimension).
 
 %%%%% Check horizontal alignments
-horiWinner(Board, X, E, A, Y) :-
+horiWinner(Board, X, E, A, Y, _) :-
     checkWinner(Board, X, E, A, Y, 1).
 
 %%%%% Check left diagonal alignments (top right - bottom left)
-leftDiagWinner(Board, X, E, A, Y) :-
-    length(Board, BoardLength),
-    BoardDimension is round(sqrt(BoardLength)),
+leftDiagWinner(Board, X, E, A, Y, BoardDimension) :-
     BottomLeft is BoardDimension-1,
     checkWinner(Board, X, E, A, Y, BottomLeft).
 
 %%%%% Check right diagonal alignments (top left - bottom right)
-rightDiagWinner(Board, X, E, A, Y) :-
-    length(Board, BoardLength),
-    BoardDimension is sqrt(BoardLength),
+rightDiagWinner(Board, X, E, A, Y, BoardDimension) :-
     BottomRight is round(BoardDimension+1),
     checkWinner(Board, X, E, A, Y, BottomRight).
 
