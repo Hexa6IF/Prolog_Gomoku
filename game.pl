@@ -82,13 +82,15 @@ human(Board, Index, _) :-
     read(MoveC),
     write('R: '),
     read(MoveR),
-    Index is MoveC+11*MoveR,
+    length(Board, BoardLength),
+    BoardDimension is round(sqrt(BoardLength)),
+    Index is MoveC+BoardDimension*MoveR,
     nth0(Index, Board, Elem),
     var(Elem),
     !.
 
 %%%% Artificial intelligence 1
-%%%% This AI plays randomly and does not care who is playing: it chooses a free position in the Board (an element which is an free variable).
+%%%% This AI plays randomly and does not care who is playing: it chooses a free position in the Board (an element which is a free variable).
 ia(Board, Index, _) :-
     repeat,
     length(Board, BoardLength),
