@@ -18,13 +18,7 @@ init :-
 
 %%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner board.
 playHuman :-
-    gameover(Winner),
-    !,
-    write('Game is Over. Winner: '),
-    writeln(Winner),
-    displayBoard,
-    board(Board),
-    retract(board(Board)). % The game is not over, we play the next turn
+    checkGameover.
 playHuman :-
     write('New turn for:'),
     writeln('HOOMAN'),
@@ -36,19 +30,14 @@ playHuman :-
     playAI. % next turn!
 
 playAI :-
-    gameover(Winner),
-    !,
-    write('Game is Over. Winner: '),
-    writeln(Winner),
-    displayBoard,
-    board(Board),
-    retract(board(Board)). % The game is not over, we play the next turn
+    checkGameover.
 playAI :-
     write('New turn for:'),
     writeln('AI'),
     board(Board), % instanciate the board from the knowledge base
     displayBoard, % print it
-    ia3(Board, Move, o),
+    ia(Board, Move, o),
     playMove(Move, o, Board, NewBoard),
     applyIt(Board, NewBoard),
     playHuman. % next turn!
+

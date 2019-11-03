@@ -1,3 +1,13 @@
+%%%%% Check if the game is over
+checkGameover :-
+    gameover(Winner),
+    !,
+    write('Game is Over. Winner: '),
+    writeln(Winner),
+    displayBoard,
+    board(Board),
+    retract(board(Board)). % The game is not over, we play the next turn
+
 %%%%% Termination conditions
 gameover(Winner) :-
     board(Board),
