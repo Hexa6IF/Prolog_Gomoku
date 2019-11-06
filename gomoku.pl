@@ -7,6 +7,7 @@
 % until someone wins or the board is fully instanciated
 
 :- dynamic board/1.
+:- dynamic currentlyEvaluatedBoard/1.
 
 %%%% Test is the game is finished %%%
 gameover(Winner) :- board(Board), aligned(Board, Board, Winner, 0, 5), !.  % There exists a winning configuration: We cut!
@@ -70,6 +71,7 @@ selectBest(Indices,List,Min,min) :- selectMin(Indices,List,Min).
 
 %%%% Selectionne tous les indices d'une liste qui correspondent au min.
 selectMin(Indices,List,Min) :- min_list(List, Min), selectMin(Indices,List, Min,0).
+selectMin([],[],_).
 selectMin([],[],_,_).
 selectMin([X|Indices],[Min|List],Min,X) :- incr1(X,NewX), selectMin(Indices,List,Min,NewX).
 selectMin(Indices,[_|List],Min,X) :- incr1(X,NewX), selectMin(Indices,List,Min,NewX).
@@ -81,8 +83,8 @@ selectMax([X|Indices],[Max|List],Max,X) :- incr1(X,NewX), selectMax(Indices,List
 selectMax(Indices,[_|List],Max,X) :- incr1(X,NewX), selectMax(Indices,List,Max,NewX).
 
 %%%% retourne une liste de tous les index de List qui sont des variables.
-selectVar(List,Vars) :- selectVar(List,Vars,0).
-selectVar(List,[],A) :-  length(List,A).
+selectVar(List,Vars) :- selectVar(List,Vars,0),!.
+selectVar(List,[],A) :-  length(List,A),!.
 selectVar(List,[X|Vars],A) :-  nth0(A,List,Elem), var(Elem), X=A, incr1(A,NewA), selectVar(List,Vars,NewA).
 selectVar(List,Vars,A) :-  incr1(A,NewA), selectVar(List,Vars,NewA).
 
@@ -101,7 +103,7 @@ playMoves(Board,Player,[[]|Moves],FinalBoard) :-			% Si le coup à jouer est une
 playMoves(Board,Player,[Move|Moves],FinalBoard) :-
 			playMove(Board,Move,NewBoard,Player),
 			nextPlayer(Player,Opponent),
-			playMoves(NewBoard,Opponent,Moves,FinalBoard).
+			playMoves(NewBoard,Opponent,Moves,FinalBoard),!.
 
 %%%% Transforme une liste en liste de liste
 encapsuler([],[]).
@@ -110,32 +112,74 @@ encapsuler([X|Liste],[[X]|Reste]) :- encapsuler(Liste,Reste).
 %%%% EXPLORATEUR 
 %%%% [[],[CoupN1|[CoupN2],[CoupN2]],[CoupN1|[CoupN2]]]
 
+%prettyWriteListe(Liste) :- length(Liste,L),maplist(prettyWriteListe(L),Liste).
+prettyWriteListe([]).
+prettyWriteListe([Element|Liste]) :- 
+			maplist(prettyWriteListe,Liste),
+			write(Element),write(' '),
+			nextLineIfEmpty(Liste).
+
+nextLineIfEmpty([]) :- 
+			writeln('').
+nextLineIfEmpty(_).
+
+writeSpaces(0).
+writeSpaces(A) :- write('| '),incr1(NewA,A),writeSpaces(NewA).
+
+%%%% Parcours
+
+explorateur(Player,Index) :- 
+			explore(Player,0,_,[],[[]],ListeCoups,Max),
+			explorateur(Player,1,ListeCoups,Max,ListeFinale),
+			selectionneur(ListeFinale,Index).
+explorateur(_,_,ListeCoups,_,ListeCoups) :- length(ListeCoups,2).
+explorateur(_,Depth,ListeCoups,_,ListeCoups) :- length(ListeCoups,Length),(Length^Depth)>1000.
+explorateur(_,_,ListeCoups,-1,ListeCoups).
+explorateur(Player,Depth,ListeCoups,_,ListeFinale) :- 
+			explore(Player,Depth,_,[],ListeCoups,NewListeCoups,Max),
+			writeln(Max),
+			incr1(Depth,NewDepth),
+			explorateur(Player,NewDepth,NewListeCoups,Max,ListeFinale).
+
+explore(_,_,_,_,[],[[]],_).
+
 explore(Player,0,'max',CoupsPrecedent,[CoupExplore],[CoupExplore|CapsuleCoups],Max) :-
             board(Board),                                                       % On récupère le plateau initial
-			playMoves(Board,Player,[CoupExplore|CoupsPrecedent],FinalBoard),    % Note : les coups sont joues dans l'ordre inverse mais ça ne pose pas de problèmes
-			calculMeilleurMoves(Player,FinalBoard,Max,ListeCoups),
+            nextPlayer(Player,Opponent),
+			playMoves(Board,Opponent,[CoupExplore|CoupsPrecedent],FinalBoard), % Note : les coups sont joues dans l'ordre inverse mais ça ne pose pas de problèmes
+			asserta(currentlyEvaluatedBoard(FinalBoard)),
+			%writeln(FinalBoard),
+			calculMeilleurMoves(Player,FinalBoard,Max,ListeCoups),	% Fail si la liste est vide
+			retractall(currentlyEvaluatedBoard(_)),
             encapsuler(ListeCoups,CapsuleCoups), !.
 
+explore(_,0,'max',_,[CoupExplore],[CoupExplore],-1).
+
 explore(Player,Height,Strategy,CoupsPrecedent,[CoupExplore|ResteAJouer],[CoupExplore|ListMoves],Best) :- 
+			%writeln(ResteAJouer),
             incr1(NewHeight,Height),
             nextPlayer(Player,Opponent),
 			maplist(explore(Opponent,NewHeight,NewStrategy,[CoupExplore|CoupsPrecedent]),ResteAJouer,ListeCoupsN1,ListMax),
             changeStrategy(NewStrategy,Strategy),
 			selectBest(Indices,ListMax,Best,Strategy), 								% On selectionne les meilleurs coups
+			%write('Best : '), writeln(Best),
 			maplist(fakenth0(ListeCoupsN1),Indices,ListMoves).
 
-%%%% Fonction pour tester le fonctionnement sur une profondeur de 3, à mettre dans un autre fonction récursive
+selectionneur([[],[Index|_]],Index).
+selectionneur([[]|ListeMove],Index) :- 
+			maplist(length,ListeMove,ListLength),
+			selectMin(Indices,ListLength,_),
+			maplist(fakenth0(ListeMove),Indices,NewListMove),
+			selectionneur(NewListMove,Index).
+selectionneur([Index|_]|[],Index).
+selectionneur([ListeMove],Index) :- 
+			length(ListeMove,Length),
+			Numero is random(Length),
+			nth0(Numero,ListeMove,[Index|_]).
 
-exploreTest :- assert(board([_,_,_,_,_,_,_,_,_])), Player = 'o', ResteAJouer = [], 
-			explore(Player,0,_,[],[[]|ResteAJouer],ListeCoups,Max), writeln(ListeCoups),writeln(Max),
-			explore(Player,1,_,[],ListeCoups,ListeCoups2,Max2), writeln(ListeCoups2),writeln(Max2),
-			explore(Player,2,_,[],ListeCoups2,ListeCoups3,Max3), writeln(ListeCoups3),writeln(Max3),
-			explore(Player,3,_,[],ListeCoups3,ListeCoups4,Max4), writeln(ListeCoups4),writeln(Max4),
-			explore(Player,4,_,[],ListeCoups4,ListeCoups5,Max5), writeln(ListeCoups5),writeln(Max5),
-			explore(Player,5,_,[],ListeCoups5,ListeCoups6,Max6), writeln(ListeCoups6),writeln(Max6),
-			explore(Player,6,_,[],ListeCoups6,ListeCoups7,Max7), writeln(ListeCoups7),writeln(Max7),
-			explore(Player,7,_,[],ListeCoups7,ListeCoups8,Max8), writeln(ListeCoups8),writeln(Max8),
-			explore(Player,8,_,[],ListeCoups8,ListeCoups9,Max9), writeln(ListeCoups9),writeln(Max9).
+%%%% Fonction pour tester le fonctionnement de l'explorateur
+
+exploreTest :-  asserta(board([_,_,_,_,_,_,_,_,_])), Player = 'o', explorateur(Player,Index),write('| '), writeln(Index).
 
 %%%%  Pour une position de plateau donnee, retourne le gain maximum et la liste des coups associés.
 
@@ -143,23 +187,23 @@ calculMeilleurMoves(Player,Board,Max,ListMoves) :-
 			selectVar(Board,PossibleMoves),
 			length(PossibleMoves,NumberOfMoves),
 			length(Gain,NumberOfMoves),
-			maplist(heuristic(Board,Player),PossibleMoves,Gain), % On teste les gains pour chaque coup. Note : Maplist ajoute les arguments à la fin et dans l'ordre 
+			maplist(heuristic(Player),PossibleMoves,Gain), % On teste les gains pour chaque coup. Note : Maplist ajoute les arguments à la fin et dans l'ordre 
 			selectMax(Indices,Gain,Max), 								% On selectionne les meilleurs coups
 			maplist(fakenth0(PossibleMoves),Indices,ListMoves).
 
 %%%% heuristique de test pour un jeu de morpion : valeur de 1 si il y a une config gagnate, 0 sinon
 
-winner(Board, P) :- Board = [P,Q,R,_,_,_,_,_,_], P==Q, Q==R, nonvar(P). % first row
-winner(Board, P) :- Board = [_,_,_,P,Q,R,_,_,_], P==Q, Q==R, nonvar(P). % second row
-winner(Board, P) :- Board = [_,_,_,_,_,_,P,Q,R], P==Q, Q==R, nonvar(P). % third row
-winner(Board, P) :- Board = [P,_,_,Q,_,_,R,_,_], P==Q, Q==R, nonvar(P). % first column
-winner(Board, P) :- Board = [_,P,_,_,Q,_,_,R,_], P==Q, Q==R, nonvar(P). % second column
-winner(Board, P) :- Board = [_,_,P,_,_,Q,_,_,R], P==Q, Q==R, nonvar(P). % third column
-winner(Board, P) :- Board = [P,_,_,_,Q,_,_,_,R], P==Q, Q==R, nonvar(P). % first diagonal
-winner(Board, P) :- Board = [_,_,P,_,Q,_,R,_,_], P==Q, Q==R, nonvar(P). % second diagonal
+winner(Board, J) :- Board = [P,Q,R,_,_,_,_,_,_], J==P,P==Q, Q==R, nonvar(P). % first row
+winner(Board, J) :- Board = [_,_,_,P,Q,R,_,_,_], J==P,P==Q, Q==R, nonvar(P). % second row
+winner(Board, J) :- Board = [_,_,_,_,_,_,P,Q,R], J==P,P==Q, Q==R, nonvar(P). % third row
+winner(Board, J) :- Board = [P,_,_,Q,_,_,R,_,_], J==P,P==Q, Q==R, nonvar(P). % first column
+winner(Board, J) :- Board = [_,P,_,_,Q,_,_,R,_], J==P,P==Q, Q==R, nonvar(P). % second column
+winner(Board, J) :- Board = [_,_,P,_,_,Q,_,_,R], J==P,P==Q, Q==R, nonvar(P). % third column
+winner(Board, J) :- Board = [P,_,_,_,Q,_,_,_,R], J==P,P==Q, Q==R, nonvar(P). % first diagonal
+winner(Board, J) :- Board = [_,_,P,_,Q,_,R,_,_], J==P,P==Q, Q==R, nonvar(P). % second diagonal
 
-heuristic(Board,Player,Move,1) :- playMove(Board,Move,NewBoard,Player),winner(NewBoard,Player).
-heuristic(_,_,_,0).
+heuristic(Player,Move,1) :- currentlyEvaluatedBoard(Board),playMove(Board,Move,NewBoard,Player),winner(NewBoard,Player).
+heuristic(_,_,0).
 
 %%%% Tell who is the next player
 
