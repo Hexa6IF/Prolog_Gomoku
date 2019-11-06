@@ -104,7 +104,7 @@ evalBoardHori(Board, Player, AccScore, TotalHScore, Acc) :-
     length(Board, BoardLength),
     BoardDimension is round(sqrt(BoardLength)),
     RowLastIndex is BoardDimension-1-4, %%6=11-1-4
-    Acc mod BoardDimension=<RowLastIndex, 
+    Acc mod BoardDimension=<RowLastIndex,
 	%Acc mod 11=<6,
     evalHori(Board, Player, HScore, Acc, 0, 0, 0),
 	NewAccScore is AccScore + HScore,
@@ -136,7 +136,7 @@ evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, Acc) :-
     length(Board, BoardLength),
     BoardDimension is round(sqrt(BoardLength)),
     LastIndex is BoardLength-4*BoardDimension-1, %% 76=11*11-4*11-1
-    Acc =< LastIndex, 
+    Acc =< LastIndex,
 	%Acc=<76,
     Acc mod BoardDimension >=4,
     %Acc mod 11>=4,
@@ -156,7 +156,7 @@ evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, Acc) :-
     length(Board, BoardLength),
     BoardDimension is round(sqrt(BoardLength)),
     LastIndex is BoardLength-4*BoardDimension-1, %% 76=11*11-4*11-1
-    Acc =< LastIndex, 
+    Acc =< LastIndex,
 	%Acc=<76,
     RowLastIndex is BoardDimension-1-4,
     Acc mod BoardDimension=<RowLastIndex,
@@ -206,7 +206,7 @@ evalHori(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :-
              PlyCount,
              OppCount).
 
-%%%%% Recursively calculate the total value of a given state of the board to the player - verical alignements
+%%%%% Recursively calculate the total value of a given state of the board to the player - vertical alignements
 evalVert(_, _, VScore, _, 5, PlyCount, OppCount) :-
     getScore(PlyCount, OppCount, VScore),
     !.

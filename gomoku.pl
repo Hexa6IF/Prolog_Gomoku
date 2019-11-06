@@ -13,9 +13,12 @@
 
 %%%%% Start the game
 init :-
-    length(Board, 121),
+    writeln('Board size?'),
+	read(BoardSize),
+	BoardLength is BoardSize*BoardSize,
+	length(Board, BoardLength),
     assert(board(Board)),
-	write('< o > or < x > for human?  '),
+	writeln('< o > or < x > for human?'),
 	read(HumanMark),
 	writeln('Which AI to play with?'),
 	writeln('1 - Random'),
