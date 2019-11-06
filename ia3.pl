@@ -23,9 +23,52 @@ getPossibleMoves(Board, Moves, AllMoves, Acc) :-
 %%%%% Get the best move for the given player for a given state of the board
 findBestMove(Board, Player, BestMove) :-
     getPossibleMoves(Board, [], AllMoves, 0),
-    minmax(Board, Player, AllMoves,  (nil, -inf), BestMove).
+	evaluateAndChoose(Player, Board, 2, -inf, inf, AllMoves, nil, (BestMove, _)).
 
-%%%%% Recursive MinMax algorithm to find the explore all possible moves and get the best move for the player
+%%evaluateAndChoose(_, _, _, _, _, _, [], BestMove, BestMove) :- writeln(BestMove).
+%%evaluateAndChoose(Player, Board, Depth, Flag, [Move|Moves], Record, BestMove) :-
+evaluateAndChoose(_, _, _, _, _, [], BestMove, (BestMove, _)).
+evaluateAndChoose(Player, Board, Depth, Alpha, Beta, [Move|Moves], CurrBest, BestMove) :-
+	playMove(Move, Player, Board, NewBoard),
+	alphabeta(Player, NewBoard, Depth, Alpha, Beta, _, BestValue),
+	%%minimax(Player, NewBoard, Depth, Flag, _, BestValue),
+	NewValue is -BestValue,
+	cutOff(Move, NewValue, Player, NewBoard, Depth, Alpha, Beta, Moves, CurrBest, BestMove).
+	%%compareMove(Move, BestValue, Record, NewRecord),
+	%%evaluateAndChoose(Player, Board, Flag, Depth, Moves, NewRecord, BestMove).
+
+alphabeta(Player, Board, 0, _, _, _, Value) :-
+	evalBoard(Board, Player, Value).
+alphabeta(Player, Board, Depth, Alpha, Beta, Move, Value) :-
+	getPossibleMoves(Board, [], AllMoves, 0),
+	NewAlpha is -Beta,
+	NewBeta is -Alpha,
+	NewDepth is Depth - 1,
+	evaluateAndChoose(Player, Board, NewDepth, NewAlpha, NewBeta, AllMoves, nil, (Move, Value)).
+
+cutOff(BestMove, BestValue, _, _, _, _, Beta, _, _, (BestMove, BestValue)) :-
+	BestValue >= Beta.
+cutOff(Move, Value, Player, Board, Depth, Alpha, Beta, Moves, _, BestMove) :-
+	Alpha < Value,
+	Value < Beta,
+	evaluateAndChoose(Player, Board, Depth, Value, Beta, Moves, Move, BestMove).
+cutOff(_, Value, Player, Board, Depth, Alpha, Beta, Moves, CurrBest, BestMove) :-
+	Value =< Alpha,
+	evaluateAndChoose(Player, Board, Depth, Alpha, Beta, Moves, CurrBest, BestMove).
+
+%%%%% Recursive MinMax algorithm to explore all possible moves and get the best move for the player
+
+minimax(Player, Board, 0, Flag, _, Value) :-
+	evalBoard(Board, Player, BoardScore),
+	Value is BoardScore*Flag.
+minimax(Player, Board, Depth, Flag, Move, Value) :-
+	Depth > 0,
+	getPossibleMoves(Board, [], AllMoves, 0),
+	NewDepth is Depth - 1,
+	NewFlag is -Flag,
+	evaluateAndChoose(Player, Board, NewFlag, NewDepth, AllMoves, (nil, -inf), (Move, Value)).
+
+
 minmax(_, _, [],  (BestMove, _), BestMove).
 minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :-
 	playMove(Move, Player, Board, NewBoard), 				% Plays a 'test' move
