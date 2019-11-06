@@ -33,9 +33,13 @@ minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :-
 	getPossibleMoves(NewBoard, [], OppMoves, 0),			% Repeats procedure for opponent
 	maxmin(NewBoard, Opponent, OppMoves, (nil, -inf), OppBestScore, OppBestMove),
 	playMove(OppBestMove, Opponent, NewBoard, FinalBoard),
-	evalBoard(FinalBoard, Player, BoardScore),			% Evaluates the board after the move
+	evalBoard2(FinalBoard, Player, BoardScore),			% Evaluates the board after the move
 	OppFactor is (OppBestScore),
-	Difference is BoardScore - OppFactor,
+    Difference is BoardScore - OppFactor,
+    % writeln(Move),
+    % writeln(OppBestScore),
+    % writeln(BoardScore),
+    % writeln('______'),
 	compareMove(Move, Difference, CurrBest, UpdatedBest),	% Compares to the current best move
     minmax(Board, Player, Moves, UpdatedBest, BestMove),
     !.
@@ -43,7 +47,7 @@ minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :-
 maxmin(_, _, [],  (BestMove, BestScore),BestScore, BestMove).
 maxmin(Board, Player, [Move|Moves], CurrBest, BestScore, BestMove) :-
 	playMove(Move, Player, Board, NewBoard), 				% Plays a 'test' move
-    evalBoard(NewBoard, Player, BoardScore),			% Evaluates the board after the move
+    evalBoard2(NewBoard, Player, BoardScore),			% Evaluates the board after the move
 	compareMove(Move, BoardScore, CurrBest, UpdatedBest),	% Compares to the current best move
     maxmin(Board, Player, Moves, UpdatedBest, BestScore, BestMove),
 	!.
@@ -55,15 +59,16 @@ compareMove(_, CurrScore,  (BestMove, BestScore),  (BestMove, BestScore)) :-
     CurrScore<BestScore.
 
 %%%%% Attribute a score to each consecutive sets of player marker alignements
-getScore(1, 0, 1) :-
+%%%% Heuristic 1 : TRY ME B*ITCH
+getScoreH1(1, 0, 1) :-
     !.
-getScore(2, 0, 10) :-
+getScoreH1(2, 0, 10) :-
     !.
-getScore(3, 0, 100) :-
+getScoreH1(3, 0, 100) :-
     !.
-getScore(4, 0, 1000) :-
+getScoreH1(4, 0, 1000) :-
     !.
-getScore(5, 0, 10000000000000) :-
+getScoreH1(5, 0, 10000000000000) :-
     !.
 % getScore(0, 3, -10000) :-
 % 	!.
@@ -77,8 +82,24 @@ getScore(5, 0, 10000000000000) :-
 %	!.
 %getScore(3, 2, -10000000) :-
 %	!.
-getScore(_, _, 0) :-
+getScoreH1(_, _, 0) :-
     !.
+
+%%%% Heuristic 2 : Chill brah
+getScoreH2(0, 0, 1) :-
+    !.
+getScoreH2(_, 0, 100) :-
+    !.
+getScoreH2(_, _, 0) :-
+    !.
+
+%%%% Heuristic 3 : Deeeeeefeeeeense !
+getScoreH3(PlyCount, OppCount, Score) :- 
+    TempScore is (100 ^ OppCount) - (10 ^ PlyCount),
+    Score is -TempScore .
+
+%%%%% Heuristic proxy
+getScore(PlyCount, OppCount, Score) :- getScoreH3(PlyCount, OppCount, Score).
 
 %%%%% Increment the count of player/oppent markers in a row
 incrementCount(Player, Elem, PlyCount, OppCount, NewPlyCount, NewOppCount) :-
@@ -90,6 +111,16 @@ incrementCount(_, _, PlyCount, OppCount, NewPlyCount, NewOppCount) :-
     NewOppCount is OppCount+1.
 
 %%%%% Recursively calculate the total value of a given state of the board to the player
+evalBoard2(Board, Player, BoardScore) :-
+    aligned(Board, Player, 1, Ones, 1),
+    aligned(Board, Player, 2, Twos, 1),
+    aligned(Board, Player, 3, Threes, 1),
+    aligned(Board, Player, 4, Fours, 1),
+    aligned(Board, Player, 5, Fives, 1),
+    aligned(Board, Player, 5, FivesBlocked, 0),
+    BoardScore is 1*Ones+10*Twos+100*Threes+1000*(Fours)+100000*(FivesBlocked-Fives),
+    !.
+
 evalBoard(Board, Player, BoardScore) :-
     evalBoardHori(Board, Player, 0, TotalHScore, 0),
     evalBoardVert(Board, Player, 0, TotalVScore, 0),
