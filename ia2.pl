@@ -3,7 +3,7 @@
 ia2(Board, Index, Player) :-
     parcours(Board, Index, Player).
 ia2(Board, Index, _) :-
-    ia(Board, Index, _).
+    ia1(Board, Index, _).
 
 %%%%% Recursively traverse the tree of possible moves and pick the move that aligns the most in a row
 parcours(Board, Index, Player) :-
