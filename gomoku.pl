@@ -117,22 +117,6 @@ encapsuler([X|Liste],[[X]|Reste]) :- encapsuler(Liste,Reste).
 %%%% EXPLORATEUR 
 %%%% [[],[CoupN1|[CoupN2],[CoupN2]],[CoupN1|[CoupN2]]]
 
-%prettyWriteListe(Liste) :- length(Liste,L),maplist(prettyWriteListe(L),Liste).
-prettyWriteListe([]).
-prettyWriteListe([Element|Liste]) :- 
-			maplist(prettyWriteListe,Liste),
-			write(Element),write(' '),
-			nextLineIfEmpty(Liste).
-
-nextLineIfEmpty([]) :- 
-			writeln('').
-nextLineIfEmpty(_).
-
-writeSpaces(0).
-writeSpaces(A) :- write('| '),incr1(NewA,A),writeSpaces(NewA).
-
-%%%% Parcours
-
 explorateur(Player,Index) :- 
 			explore(Player,0,_,[],[[]],ListeCoups,Max),
 			explorateur(Player,1,ListeCoups,Max,ListeFinale),
@@ -415,7 +399,7 @@ calculMeilleurMoves(Player,Board,Max,ListMoves) :-
 					OppCount).
 
 
-heuristic(Player,Move,BoardScore) :- currentlyEvaluatedBoard(Board),playMove(Board,Move,NewBoard,Player) ,evalBoard(NewBoard, Player, BoardScore).
+heuristic(Player,Move,BoardScore) :- currentlyEvaluatedBoard(Board),playMove(Board,Move,NewBoard,Player),evalBoard(NewBoard, Player, BoardScore).
 heuristic(_,_,0).
 
 %%%% Tell who is the next player
