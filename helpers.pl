@@ -127,12 +127,12 @@ horiOfSize(Board, Index, Player, Acc, Size, _, 0) :-
 %%%%% Check vertical alignments
 vertOfSize(Board, Index, Player, Acc, Size, BoardDimension, 1) :-
 	Index >= BoardDimension,
-	Index =< ((BoardDimension-Size)*BoardDimension)-1,
+	Index =< ((BoardDimension-Size-1)*BoardDimension)-1,
 	PreviousIndex is Index - BoardDimension,
 	isPosEmpty(Board, PreviousIndex),
 	NextIndex is Index + Size * BoardDimension,
 	isPosEmpty(Board, NextIndex),
-	checkConfig(Board, Index, Player, Acc, Size, 1).
+	checkConfig(Board, Index, Player, Acc, Size, BoardDimension).
 
 vertOfSize(Board, Index, Player, Acc, Size, BoardDimension, 0) :-
     checkConfig(Board, Index, Player, Acc, Size, BoardDimension).
