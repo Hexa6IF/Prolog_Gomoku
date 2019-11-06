@@ -61,7 +61,7 @@ ia2(Board,Index,_) :-ia(Board,Index,_).
 
 %%%% ia qui évalue les gains de chaque position
 
-% ia3(Board,Index,Player) :- gainStep(Player,1,_,Board).
+ia3(_,Index,Player) :- explorateur(Player,Index).
 
 %%%% /!\ Chercher les possibilités d'utiliser les prédicats INCLUDE, MAPLIST, etc.. https://www.swi-prolog.org/pldoc/man?section=apply 
 
@@ -87,6 +87,11 @@ selectVar(List,Vars) :- selectVar(List,Vars,0),!.
 selectVar(List,[],A) :-  length(List,A),!.
 selectVar(List,[X|Vars],A) :-  nth0(A,List,Elem), var(Elem), X=A, incr1(A,NewA), selectVar(List,Vars,NewA).
 selectVar(List,Vars,A) :-  incr1(A,NewA), selectVar(List,Vars,NewA).
+ 
+%%%%
+isPosEmpty(Board, Index) :-
+    nth0(Index, Board, Elem),
+    var(Elem).
 
 %%%% incremente X en NewX et l'initialise si dans le cas où X et NewX sont des variable, permet aussi de décrementer.
 incr1(X,NewX) :- nonvar(X),NewX is X+1.
@@ -133,22 +138,21 @@ explorateur(Player,Index) :-
 			explorateur(Player,1,ListeCoups,Max,ListeFinale),
 			selectionneur(ListeFinale,Index).
 explorateur(_,_,ListeCoups,_,ListeCoups) :- length(ListeCoups,2).
-explorateur(_,Depth,ListeCoups,_,ListeCoups) :- length(ListeCoups,Length),(Length^Depth)>1000.
+explorateur(_,Depth,ListeCoups,_,ListeCoups) :- length(ListeCoups,Length),(121*(Length^Depth))>15000.
 explorateur(_,_,ListeCoups,-1,ListeCoups).
 explorateur(Player,Depth,ListeCoups,_,ListeFinale) :- 
 			explore(Player,Depth,_,[],ListeCoups,NewListeCoups,Max),
-			writeln(Max),
 			incr1(Depth,NewDepth),
 			explorateur(Player,NewDepth,NewListeCoups,Max,ListeFinale).
 
 explore(_,_,_,_,[],[[]],_).
 
 explore(Player,0,'max',CoupsPrecedent,[CoupExplore],[CoupExplore|CapsuleCoups],Max) :-
-            board(Board),                                                       % On récupère le plateau initial
-            nextPlayer(Player,Opponent),
-			playMoves(Board,Opponent,[CoupExplore|CoupsPrecedent],FinalBoard), % Note : les coups sont joues dans l'ordre inverse mais ça ne pose pas de problèmes
+            board(Board),
+			nextPlayer(Player,Opponent),                                                       % On récupère le plateau initial
+			reverse([CoupExplore|CoupsPrecedent],CoupsAJouer),
+			playMoves(Board,Opponent,CoupsAJouer,FinalBoard), % Note : les coups sont joues dans l'ordre inverse mais ça ne pose pas de problèmes
 			asserta(currentlyEvaluatedBoard(FinalBoard)),
-			%writeln(FinalBoard),
 			calculMeilleurMoves(Player,FinalBoard,Max,ListeCoups),	% Fail si la liste est vide
 			retractall(currentlyEvaluatedBoard(_)),
             encapsuler(ListeCoups,CapsuleCoups), !.
@@ -156,13 +160,12 @@ explore(Player,0,'max',CoupsPrecedent,[CoupExplore],[CoupExplore|CapsuleCoups],M
 explore(_,0,'max',_,[CoupExplore],[CoupExplore],-1).
 
 explore(Player,Height,Strategy,CoupsPrecedent,[CoupExplore|ResteAJouer],[CoupExplore|ListMoves],Best) :- 
-			%writeln(ResteAJouer),
             incr1(NewHeight,Height),
             nextPlayer(Player,Opponent),
 			maplist(explore(Opponent,NewHeight,NewStrategy,[CoupExplore|CoupsPrecedent]),ResteAJouer,ListeCoupsN1,ListMax),
+			writeln(ListMax),
             changeStrategy(NewStrategy,Strategy),
 			selectBest(Indices,ListMax,Best,Strategy), 								% On selectionne les meilleurs coups
-			%write('Best : '), writeln(Best),
 			maplist(fakenth0(ListeCoupsN1),Indices,ListMoves).
 
 selectionneur([[],[Index|_]],Index).
@@ -172,7 +175,7 @@ selectionneur([[]|ListeMove],Index) :-
 			maplist(fakenth0(ListeMove),Indices,NewListMove),
 			selectionneur(NewListMove,Index).
 selectionneur([Index|_]|[],Index).
-selectionneur([ListeMove],Index) :- 
+selectionneur(ListeMove,Index) :- 
 			length(ListeMove,Length),
 			Numero is random(Length),
 			nth0(Numero,ListeMove,[Index|_]).
@@ -193,16 +196,226 @@ calculMeilleurMoves(Player,Board,Max,ListMoves) :-
 
 %%%% heuristique de test pour un jeu de morpion : valeur de 1 si il y a une config gagnate, 0 sinon
 
-winner(Board, J) :- Board = [P,Q,R,_,_,_,_,_,_], J==P,P==Q, Q==R, nonvar(P). % first row
-winner(Board, J) :- Board = [_,_,_,P,Q,R,_,_,_], J==P,P==Q, Q==R, nonvar(P). % second row
-winner(Board, J) :- Board = [_,_,_,_,_,_,P,Q,R], J==P,P==Q, Q==R, nonvar(P). % third row
-winner(Board, J) :- Board = [P,_,_,Q,_,_,R,_,_], J==P,P==Q, Q==R, nonvar(P). % first column
-winner(Board, J) :- Board = [_,P,_,_,Q,_,_,R,_], J==P,P==Q, Q==R, nonvar(P). % second column
-winner(Board, J) :- Board = [_,_,P,_,_,Q,_,_,R], J==P,P==Q, Q==R, nonvar(P). % third column
-winner(Board, J) :- Board = [P,_,_,_,Q,_,_,_,R], J==P,P==Q, Q==R, nonvar(P). % first diagonal
-winner(Board, J) :- Board = [_,_,P,_,Q,_,R,_,_], J==P,P==Q, Q==R, nonvar(P). % second diagonal
+%%%%% Attribute a score to each consecutive sets of player marker alignements
+	
+	getScore(5, 0, 100) :-
+		!.
+	getScore(_, _, 0) :-
+		!.
 
-heuristic(Player,Move,1) :- currentlyEvaluatedBoard(Board),playMove(Board,Move,NewBoard,Player),winner(NewBoard,Player).
+%%%%% Increment the count of player/oppent markers in a row
+	incrementCount(Player, Elem, PlyCount, OppCount, NewPlyCount, NewOppCount) :-
+		Elem==Player,
+		NewPlyCount is PlyCount+1,
+		NewOppCount is OppCount.
+	incrementCount(_, _, PlyCount, OppCount, NewPlyCount, NewOppCount) :-
+		NewPlyCount is PlyCount,
+		NewOppCount is OppCount+1.
+
+%%%%% Recursively calculate the total value of a given state of the board to the player
+	evalBoard(Board, Player, BoardScore) :-
+		evalBoardHori(Board, Player, 0, TotalHScore, 0),
+		evalBoardVert(Board, Player, 0, TotalVScore, 0),
+		evalBoardLeftDiag(Board, Player, 0, TotalLDScore, 0),
+		evalBoardRightDiag(Board, Player, 0, TotalRDScore, 0),
+		BoardScore is TotalHScore+TotalVScore+TotalLDScore+TotalRDScore,
+		!.
+
+	evalBoardHori(_, _, TotalScore, TotalScore, 121).
+	evalBoardHori(Board, Player, AccScore, TotalHScore, Acc) :-
+		Acc mod 11=<6,
+		evalHori(Board, Player, HScore, Acc, 0, 0, 0),
+		NewAccScore is AccScore + HScore,
+		NewAcc is Acc + 1,
+		evalBoardHori(Board, Player, NewAccScore, TotalHScore, NewAcc),
+		!.
+	evalBoardHori(Board, Player, AccScore, TotalHScore, Acc) :-
+		NewAcc is Acc + 1,
+		evalBoardHori(Board, Player, AccScore, TotalHScore, NewAcc),
+		!.
+
+	evalBoardVert(_, _, TotalScore, TotalScore, 121).
+	evalBoardVert(Board, Player, AccScore, TotalVScore, Acc) :-
+		Acc=<76,
+		evalVert(Board, Player, VScore, Acc, 0, 0, 0),
+		NewAccScore is AccScore + VScore,
+		NewAcc is Acc + 1,
+		evalBoardVert(Board, Player, NewAccScore, TotalVScore, NewAcc),
+		!.
+	evalBoardVert(Board, Player, AccScore, TotalVScore, Acc) :-
+		NewAcc is Acc + 1,
+		evalBoardVert(Board, Player, AccScore, TotalVScore, NewAcc),
+		!.
+
+	evalBoardLeftDiag(_, _, TotalScore, TotalScore, 121).
+	evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, Acc) :-
+		Acc=<76,
+		Acc mod 11>=4,
+		evalLeftDiag(Board, Player, LDScore, Acc, 0, 0, 0),
+		NewAccScore is AccScore + LDScore,
+		NewAcc is Acc + 1,
+		evalBoardLeftDiag(Board, Player, NewAccScore, TotalLDScore, NewAcc),
+		!.
+	evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, Acc) :-
+		NewAcc is Acc + 1,
+		evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, NewAcc),
+		!.
+
+	evalBoardRightDiag(_, _, TotalScore, TotalScore, 121).
+	evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, Acc) :-
+		Acc=<76,
+		Acc mod 11=<6,
+		evalRightDiag(Board, Player, RDScore, Acc, 0, 0, 0),
+		NewAccScore is AccScore + RDScore,
+		NewAcc is Acc + 1,
+		evalBoardRightDiag(Board, Player, NewAccScore, TotalRDScore, NewAcc),
+		!.
+	evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, Acc) :-
+		NewAcc is Acc + 1,
+		evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, NewAcc),
+		!.
+
+%%%%% Recursively calculate the total value of a given state of the board to the player - horizontal alignements
+	evalHori(_, _, HScore, _, 5, PlyCount, OppCount) :-
+		getScore(PlyCount, OppCount, HScore),
+		!.
+	evalHori(Board, Player, HScore, Index, Acc, PlyCount, OppCount) :-
+		Acc=<5,
+		not(isPosEmpty(Board, Index)),
+		nth0(Index, Board, Elem),
+		NewAcc is Acc+1,
+		NewIndex is Index+1,
+		incrementCount(Player,
+					Elem,
+					PlyCount,
+					OppCount,
+					NewPlyCount,
+					NewOppCount),
+		evalHori(Board,
+				Player,
+				HScore,
+				NewIndex,
+				NewAcc,
+				NewPlyCount,
+				NewOppCount).
+	evalHori(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :-
+		Acc=<5,
+		NewIndex is Index+1,
+		NewAcc is Acc+1,
+		evalHori(Board,
+				Player,
+				VScore,
+				NewIndex,
+				NewAcc,
+				PlyCount,
+				OppCount).
+
+%%%%% Recursively calculate the total value of a given state of the board to the player - verical alignements
+	evalVert(_, _, VScore, _, 5, PlyCount, OppCount) :-
+		getScore(PlyCount, OppCount, VScore),
+		!.
+	evalVert(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :-
+		Acc=<5,
+		not(isPosEmpty(Board, Index)),
+		nth0(Index, Board, Elem),
+		NewAcc is Acc+1,
+		NewIndex is Index+11,
+		incrementCount(Player,
+					Elem,
+					PlyCount,
+					OppCount,
+					NewPlyCount,
+					NewOppCount),
+		evalVert(Board,
+				Player,
+				VScore,
+				NewIndex,
+				NewAcc,
+				NewPlyCount,
+				NewOppCount),
+		!.
+	evalVert(Board, Player, VScore, Index, Acc, PlyCount, OppCount) :-
+		Acc=<5,
+		NewIndex is Index+11,
+		NewAcc is Acc+1,
+		evalVert(Board,
+				Player,
+				VScore,
+				NewIndex,
+				NewAcc,
+				PlyCount,
+				OppCount).
+
+%%%%% Recursively calculate the total value of a given state of the board to the player - left-diagonal alignements
+	evalLeftDiag(_, _, LDScore, _, 5, PlyCount, OppCount) :-
+		getScore(PlyCount, OppCount, LDScore),
+		!.
+	evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :-
+		not(isPosEmpty(Board, Index)),
+		nth0(Index, Board, Elem),
+		NewAcc is Acc+1,
+		NewIndex is Index+10,
+		incrementCount(Player,
+					Elem,
+					PlyCount,
+					OppCount,
+					NewPlyCount,
+					NewOppCount),
+		evalLeftDiag(Board,
+					Player,
+					LDScore,
+					NewIndex,
+					NewAcc,
+					NewPlyCount,
+					NewOppCount).
+	evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :-
+		Acc=<5,
+		NewIndex is Index+10,
+		NewAcc is Acc+1,
+		evalLeftDiag(Board,
+					Player,
+					LDScore,
+					NewIndex,
+					NewAcc,
+					PlyCount,
+					OppCount).
+
+%%%%% Recursively calculate the total value of a given state of the board to the player - right-diagonal alignements
+	evalRightDiag(_, _, RDScore, _, 5, PlyCount, OppCount) :-
+		getScore(PlyCount, OppCount, RDScore),
+		!.
+	evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :-
+		not(isPosEmpty(Board, Index)),
+		nth0(Index, Board, Elem),
+		NewAcc is Acc+1,
+		NewIndex is Index+12,
+		incrementCount(Player,
+					Elem,
+					PlyCount,
+					OppCount,
+					NewPlyCount,
+					NewOppCount),
+		evalRightDiag(Board,
+					Player,
+					RDScore,
+					NewIndex,
+					NewAcc,
+					NewPlyCount,
+					NewOppCount).
+	evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :-
+		Acc=<5,
+		NewIndex is Index+12,
+		NewAcc is Acc+1,
+		evalRightDiag(Board,
+					Player,
+					RDScore,
+					NewIndex,
+					NewAcc,
+					PlyCount,
+					OppCount).
+
+
+heuristic(Player,Move,BoardScore) :- currentlyEvaluatedBoard(Board),playMove(Board,Move,NewBoard,Player) ,evalBoard(NewBoard, Player, BoardScore).
 heuristic(_,_,0).
 
 %%%% Tell who is the next player
@@ -231,7 +444,7 @@ playHuman:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner
 playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciate the board from the knowledge base     
             displayBoard, % print it
 			%human(Board, Move, 'x'),
-			ia2(Board, Move, 'x'),
+			human(Board, Move, 'x'),
             playMove(Board,Move,NewBoard,'x'), % Play the move and get the result in a new Board
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one
 			playAI. % next turn!
@@ -240,7 +453,7 @@ playHuman:- write('New turn for:'), writeln('HOOMAN'),board(Board), % instanciat
 playAI:- gameover(Winner), !, write('Game is Over. Winner: '), writeln(Winner), displayBoard, board(Board), retract(board(Board)). % The game is not over, we play the next turn
 playAI:- write('New turn for:'), writeln('AI'),board(Board), % instanciate the board from the knowledge base     
             displayBoard, % print it 
-            human(Board, Move, 'o'),
+            ia3(Board, Move, 'o'),
             playMove(Board, Move,NewBoard,'o'), % Play the move and get the result in a new Board
             applyIt(Board, NewBoard), % Remove the old board from the KB and store the new one
 			playHuman. % next turn!
