@@ -31,7 +31,7 @@ init :-
     writeln('3 - Alpha-Beta with H1'),
     writeln('4 - Alpha-Beta with H2'),
 	read(AISel),
-	setHeuristic(AISel),
+	%%setHeuristic(AISel),
     play(x, HumanMark, AISel).
 
 %%%% Set dynamic heuristic selector
@@ -44,20 +44,25 @@ setHeuristic(4) :-
 play(_, _, _) :-
     checkGameover.
 play(Player, Player, AISel) :-
-    writeln('New turn for: HOOMAN'),
+	writeln('New turn for: Player 1'),
     board(Board),
     displayBoard,
-    human(Board, Move, Player),
+    %%human(Board, Move, Player),
+	assert(heuristic(1)),
+	ia(Board, Move, Player, AISel),
+	retract(heuristic(_)),
     playMove(Move, Player, Board, NewBoard),
     applyIt(Board, NewBoard),
     changePlayer(Player, NextPlayer),
     play(NextPlayer, Player, AISel).
 play(Player, HumanMark, AISel) :-
     Player\==HumanMark,
-    writeln('New turn for: AI'),
+	writeln('New turn for: Player 2'),
     board(Board),
-    displayBoard,
-    ia(Board, Move, Player, AISel),
+	displayBoard,
+	assert(heuristic(2)),
+	ia(Board, Move, Player, AISel),
+	retract(heuristic(_)),
     playMove(Move, Player, Board, NewBoard),
     applyIt(Board, NewBoard),
     changePlayer(Player, NextPlayer),
