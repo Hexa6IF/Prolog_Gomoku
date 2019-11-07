@@ -3,13 +3,12 @@
 ia3(Board, Index, Player) :-
     findBestMove(Board, Player, Index).
 
-%%%% Heuristic MinMax - Based on MinMax theory at 2 level depth
+%%%% MinMax - Based on MinMax theory at 2 level depth
 
 %%%%% Get a list of all possible moves in a given state of the board
 %getPossibleMoves(Board, Moves, AllMoves, BoardLength) :-
 getPossibleMoves(Board, AllMoves, AllMoves, BoardLength) :-
     length(Board, BoardLength).
-    %AllMoves=Moves.
 getPossibleMoves(Board, Moves, AllMoves, Acc) :-
     NewAcc is Acc+1,
     isPosEmpty(Board, Acc),
@@ -21,21 +20,18 @@ getPossibleMoves(Board, Moves, AllMoves, Acc) :-
     !.
 
 %%%%% Get the best move for the given player for a given state of the board
-findBestMove(Board, Player, BestMove) :-
-    getPossibleMoves(Board, [], AllMoves, 0),
-	evaluateAndChoose(Player, Board, 2, -inf, inf, AllMoves, nil, (BestMove, _)).
 
-%%evaluateAndChoose(_, _, _, _, _, _, [], BestMove, BestMove) :- writeln(BestMove).
-%%evaluateAndChoose(Player, Board, Depth, Flag, [Move|Moves], Record, BestMove) :-
-evaluateAndChoose(_, _, _, _, _, [], BestMove, (BestMove, _)).
+%%%% Alpha Beta Pruning
+findBestMove(Board, Player, BestMove) :-
+	alphabeta(Player, Board, 2, -inf, inf, BestMove, _).
+
+evaluateAndChoose(_, _, _, Alpha, _, [], BestMove, (BestMove, Alpha)).
 evaluateAndChoose(Player, Board, Depth, Alpha, Beta, [Move|Moves], CurrBest, BestMove) :-
 	playMove(Move, Player, Board, NewBoard),
-	alphabeta(Player, NewBoard, Depth, Alpha, Beta, _, BestValue),
-	%%minimax(Player, NewBoard, Depth, Flag, _, BestValue),
+	changePlayer(Player, NextPlayer),
+	alphabeta(NextPlayer, NewBoard, Depth, Alpha, Beta, _, BestValue),
 	NewValue is -BestValue,
-	cutOff(Move, NewValue, Player, NewBoard, Depth, Alpha, Beta, Moves, CurrBest, BestMove).
-	%%compareMove(Move, BestValue, Record, NewRecord),
-	%%evaluateAndChoose(Player, Board, Flag, Depth, Moves, NewRecord, BestMove).
+	cutOff(Move, NewValue, Player, Board, Depth, Alpha, Beta, Moves, CurrBest, BestMove).
 
 alphabeta(Player, Board, 0, _, _, _, Value) :-
 	evalBoard(Board, Player, Value).
@@ -47,49 +43,38 @@ alphabeta(Player, Board, Depth, Alpha, Beta, Move, Value) :-
 	evaluateAndChoose(Player, Board, NewDepth, NewAlpha, NewBeta, AllMoves, nil, (Move, Value)).
 
 cutOff(BestMove, BestValue, _, _, _, _, Beta, _, _, (BestMove, BestValue)) :-
-	BestValue >= Beta.
+	BestValue >= Beta, !.
 cutOff(Move, Value, Player, Board, Depth, Alpha, Beta, Moves, _, BestMove) :-
 	Alpha < Value,
-	Value < Beta,
+	Value < Beta, !,
 	evaluateAndChoose(Player, Board, Depth, Value, Beta, Moves, Move, BestMove).
 cutOff(_, Value, Player, Board, Depth, Alpha, Beta, Moves, CurrBest, BestMove) :-
-	Value =< Alpha,
+	Value =< Alpha, !,
 	evaluateAndChoose(Player, Board, Depth, Alpha, Beta, Moves, CurrBest, BestMove).
 
-%%%%% Recursive MinMax algorithm to explore all possible moves and get the best move for the player
+%%%% Minimax refactored
+
+%findBestMove(Board, Player, BestMove) :-
+%%%%getPossibleMoves(Board, [], AllMoves, 0),
+%%%%evaluateAndChoose(Player, Board, 2, 1, AllMoves, (nil, -inf), (BestMove, _)).
+
+evaluateAndChoose(_, _, _, _, [], BestMove, BestMove).
+evaluateAndChoose(Player, Board, Depth, Flag, [Move|Moves], Record, BestMove) :-
+	playMove(Move, Player, Board, NewBoard),
+	minimax(Player, NewBoard, Depth, Flag, _, BestValue),
+	compareMove(Move, BestValue, Record, NewRecord),
+	evaluateAndChoose(Player, Board, Depth, Flag, Moves, NewRecord, BestMove).
 
 minimax(Player, Board, 0, Flag, _, Value) :-
 	evalBoard(Board, Player, BoardScore),
 	Value is BoardScore*Flag.
 minimax(Player, Board, Depth, Flag, Move, Value) :-
 	Depth > 0,
+	changePlayer(Player, NextPlayer),
 	getPossibleMoves(Board, [], AllMoves, 0),
 	NewDepth is Depth - 1,
 	NewFlag is -Flag,
-	evaluateAndChoose(Player, Board, NewFlag, NewDepth, AllMoves, (nil, -inf), (Move, Value)).
-
-
-minmax(_, _, [],  (BestMove, _), BestMove).
-minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :-
-	playMove(Move, Player, Board, NewBoard), 				% Plays a 'test' move
-	changePlayer(Player, Opponent),
-	getPossibleMoves(NewBoard, [], OppMoves, 0),			% Repeats procedure for opponent
-	maxmin(NewBoard, Opponent, OppMoves, (nil, -inf), OppBestScore, OppBestMove),
-	playMove(OppBestMove, Opponent, NewBoard, FinalBoard),
-	evalBoard(FinalBoard, Player, BoardScore),			% Evaluates the board after the move
-	OppFactor is (OppBestScore),
-	Difference is BoardScore - OppFactor,
-	compareMove(Move, Difference, CurrBest, UpdatedBest),	% Compares to the current best move
-    minmax(Board, Player, Moves, UpdatedBest, BestMove),
-    !.
-
-maxmin(_, _, [],  (BestMove, BestScore),BestScore, BestMove).
-maxmin(Board, Player, [Move|Moves], CurrBest, BestScore, BestMove) :-
-	playMove(Move, Player, Board, NewBoard), 				% Plays a 'test' move
-    evalBoard(NewBoard, Player, BoardScore),			% Evaluates the board after the move
-	compareMove(Move, BoardScore, CurrBest, UpdatedBest),	% Compares to the current best move
-    maxmin(Board, Player, Moves, UpdatedBest, BestScore, BestMove),
-	!.
+	evaluateAndChoose(NextPlayer, Board, NewDepth, NewFlag, AllMoves, (nil, -inf), (Move, Value)).
 
 %%%%% Compare a given move to the current best move and swap if necessary
 compareMove(CurrMove, CurrScore,  (_, BestScore),  (CurrMove, CurrScore)) :-
@@ -108,18 +93,18 @@ getScore(4, 0, 1000) :-
     !.
 getScore(5, 0, 10000000000000) :-
     !.
-% getScore(0, 3, -10000) :-
-% 	!.
-%getScore(0, 4, -100000000) :-
-%	!.
-%getScore(0, 5, -1000000000000) :-
-%	!.
-%getScore(4, 1, -10000000000) :-
-%	!.
-%getScore(3, 1, -10000000) :-
-%	!.
-%getScore(3, 2, -10000000) :-
-%	!.
+
+getScore(0, 1, -1) :-
+    !.
+getScore(0, 2, -10) :-
+    !.
+getScore(0, 3, -100) :-
+    !.
+getScore(0, 4, -1000) :-
+    !.
+getScore(0, 5, -10000000000000) :-
+    !.
+
 getScore(_, _, 0) :-
     !.
 
@@ -148,7 +133,6 @@ evalBoardHori(Board, Player, AccScore, TotalHScore, Acc) :-
     BoardDimension is round(sqrt(BoardLength)),
     RowLastIndex is BoardDimension-1-4, %%6=11-1-4
     Acc mod BoardDimension=<RowLastIndex,
-	%Acc mod 11=<6,
     evalHori(Board, Player, HScore, Acc, 0, 0, 0),
 	NewAccScore is AccScore + HScore,
 	NewAcc is Acc + 1,
@@ -180,9 +164,7 @@ evalBoardLeftDiag(Board, Player, AccScore, TotalLDScore, Acc) :-
     BoardDimension is round(sqrt(BoardLength)),
     LastIndex is BoardLength-4*BoardDimension-1, %% 76=11*11-4*11-1
     Acc =< LastIndex,
-	%Acc=<76,
     Acc mod BoardDimension >=4,
-    %Acc mod 11>=4,
     evalLeftDiag(Board, Player, LDScore, Acc, 0, 0, 0),
 	NewAccScore is AccScore + LDScore,
 	NewAcc is Acc + 1,
@@ -200,10 +182,8 @@ evalBoardRightDiag(Board, Player, AccScore, TotalRDScore, Acc) :-
     BoardDimension is round(sqrt(BoardLength)),
     LastIndex is BoardLength-4*BoardDimension-1, %% 76=11*11-4*11-1
     Acc =< LastIndex,
-	%Acc=<76,
     RowLastIndex is BoardDimension-1-4,
     Acc mod BoardDimension=<RowLastIndex,
-    %Acc mod 11=<6,
     evalRightDiag(Board, Player, RDScore, Acc, 0, 0, 0),
 	NewAccScore is AccScore + RDScore,
 	NewAcc is Acc + 1,
@@ -300,7 +280,6 @@ evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :-
     length(Board, BoardLength),
     BoardDimension is round(sqrt(BoardLength)),
     NewIndex is Index+BoardDimension-1,
-    %NewIndex is Index+10,
     incrementCount(Player,
                    Elem,
                    PlyCount,
@@ -316,7 +295,6 @@ evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :-
                  NewOppCount).
 evalLeftDiag(Board, Player, LDScore, Index, Acc, PlyCount, OppCount) :-
     Acc=<5,
-    %NewIndex is Index+10,
     length(Board, BoardLength),
     BoardDimension is round(sqrt(BoardLength)),
     NewIndex is Index+BoardDimension-1,
@@ -337,7 +315,6 @@ evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :-
     not(isPosEmpty(Board, Index)),
     nth0(Index, Board, Elem),
     NewAcc is Acc+1,
-    %NewIndex is Index+12,
     length(Board, BoardLength),
     BoardDimension is round(sqrt(BoardLength)),
     NewIndex is Index+BoardDimension+1,
@@ -356,7 +333,6 @@ evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :-
                   NewOppCount).
 evalRightDiag(Board, Player, RDScore, Index, Acc, PlyCount, OppCount) :-
     Acc=<5,
-    %NewIndex is Index+12,
     length(Board, BoardLength),
     BoardDimension is round(sqrt(BoardLength)),
     NewIndex is Index+BoardDimension+1,
