@@ -23,19 +23,21 @@ getPossibleMoves(Board, Moves, AllMoves, Acc) :-
 %%%%% Get the best move for the given player for a given state of the board
 findBestMove(Board, Player, BestMove) :-
     getPossibleMoves(Board, [], AllMoves, 0),
-	evaluateAndChoose(Player, Board, 2, -inf, inf, AllMoves, nil, (BestMove, _)).
+	%evaluateAndChoose(Player, Board, 2, -inf, inf, AllMoves, nil, (BestMove, _)). %%Alpha_Beta
+    evaluateAndChoose(Player, Board, 1, 1, AllMoves, (nil,-inf), (BestMove, _)). %%Minimax
+    %minmax(Board, Player, AllMoves,  (nil, -inf), BestMove). %%MinMax old
 
-%%evaluateAndChoose(_, _, _, _, _, _, [], BestMove, BestMove) :- writeln(BestMove).
-%%evaluateAndChoose(Player, Board, Depth, Flag, [Move|Moves], Record, BestMove) :-
-evaluateAndChoose(_, _, _, _, _, [], BestMove, (BestMove, _)).
-evaluateAndChoose(Player, Board, Depth, Alpha, Beta, [Move|Moves], CurrBest, BestMove) :-
+evaluateAndChoose(_, _, _, _, _, _, [], BestMove, BestMove). %%Minimax
+evaluateAndChoose(Player, Board, Depth, Flag, [Move|Moves], Record, BestMove) :- %%Minimax
+% evaluateAndChoose(_, _, _, _, _, [], BestMove, (BestMove, _)). %%Alpha_Beta
+% evaluateAndChoose(Player, Board, Depth, Alpha, Beta, [Move|Moves], CurrBest, BestMove) :- %%Alpha_Beta
 	playMove(Move, Player, Board, NewBoard),
-	alphabeta(Player, NewBoard, Depth, Alpha, Beta, _, BestValue),
-	%%minimax(Player, NewBoard, Depth, Flag, _, BestValue),
-	NewValue is -BestValue,
-	cutOff(Move, NewValue, Player, NewBoard, Depth, Alpha, Beta, Moves, CurrBest, BestMove).
-	%%compareMove(Move, BestValue, Record, NewRecord),
-	%%evaluateAndChoose(Player, Board, Flag, Depth, Moves, NewRecord, BestMove).
+	%%alphabeta(Player, NewBoard, Depth, Alpha, Beta, _, BestValue), %%Alpha_Beta
+	minimax(Player, NewBoard, Depth, Flag, _, BestValue), %%Minimax
+	% NewValue is -BestValue, %%Alpha_Beta
+	% cutOff(Move, NewValue, Player, NewBoard, Depth, Alpha, Beta, Moves, CurrBest, BestMove). %%Alpha_Beta
+	compareMove(Move, BestValue, Record, NewRecord), %%Minimax
+	evaluateAndChoose(Player, Board, Flag, Depth, Moves, NewRecord, BestMove). %%Minimax
 
 alphabeta(Player, Board, 0, _, _, _, Value) :-
 	evalBoard(Board, Player, Value).
@@ -79,10 +81,6 @@ minmax(Board, Player, [Move|Moves], CurrBest, BestMove) :-
 	evalBoard2(FinalBoard, Player, BoardScore),			% Evaluates the board after the move
 	OppFactor is (OppBestScore),
     Difference is BoardScore - OppFactor,
-    % writeln(Move),
-    % writeln(OppBestScore),
-    % writeln(BoardScore),
-    % writeln('______'),
 	compareMove(Move, Difference, CurrBest, UpdatedBest),	% Compares to the current best move
     minmax(Board, Player, Moves, UpdatedBest, BestMove),
     !.
