@@ -11,7 +11,7 @@ checkGameover :-
 %%%%% Termination conditions
 gameover(Winner) :-
     board(Board),
-    aligned(Board, Winner, 5, Count),
+    aligned(Board, Winner, 5, Count, 0),
 	Count > 0,
     !.
 gameover('Draw') :-

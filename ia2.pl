@@ -10,10 +10,10 @@ ia2(Board, Move, Player) :-
 parcours(Board, Move, Player) :-
     length(Board, BoardLength),
 	LastIndex is BoardLength - 1,
-	aligned(Board, Player, 2, Twos),
-	aligned(Board, Player, 3, Threes),
-	aligned(Board, Player, 4, Fours),
-	aligned(Board, Player, 5, Fives),
+	aligned(Board, Player, 2, Twos, 0),
+	aligned(Board, Player, 3, Threes, 0),
+	aligned(Board, Player, 4, Fours, 0),
+	aligned(Board, Player, 5, Fives, 0),
     parcours(Board, 0, Move, Player, LastIndex, [Fives, Fours, Threes, Twos]),
 	!.
 
@@ -22,7 +22,7 @@ parcours(Board, Index, Move, Player, _, [H|T]) :-
 	playMove(Index, Player, Board, NewBoard),
 	length([H|T], TailLength),
 	Size is TailLength + 1,
-	aligned(NewBoard, Player, Size, Count),
+	aligned(NewBoard, Player, Size, Count, 0),
 	Count > H,
 	Move = Index,
 	!.
