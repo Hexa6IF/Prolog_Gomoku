@@ -39,6 +39,7 @@ setHeuristic(3) :-
     assert(heuristic(1)).
 setHeuristic(4) :-
     assert(heuristic(2)).
+setHeuristic(_).
 
 %%%% Recursive predicate for playing the game. % The game is over, we use a cut to stop the proof search, and display the winner board.
 play(_, _, _) :-
