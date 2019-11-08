@@ -11,6 +11,7 @@
 :- [ia3]. %% IA 3 - MiniMax / Alpha-Beta
 :- [evalBoard1]. %% Heuristic 1 for IA3
 :- [evalBoard2]. %% Heuristic 2 for IA3
+:- [parcours]. %% Explorateur bonus
 :- [display]. %% Display board
 :- [game]. %% Game predicates
 
@@ -28,8 +29,9 @@ init :-
     writeln('Which AI to play with?'),
     writeln('1 - Random'),
     writeln('2 - Tree traversal'),
-    writeln('3 - Alpha-Beta with H1'),
+    writeln('3 - Alpha-Beta with H3'),
     writeln('4 - Alpha-Beta with H2'),
+    writeln('5 - Explorateur (Bonus) with H3'),
 	read(AISel),
 	setHeuristic(AISel),
     play(x, HumanMark, AISel).
@@ -69,5 +71,9 @@ ia(Board, Move, Player, 1) :-
     ia1(Board, Move, Player).
 ia(Board, Move, Player, 2) :-
     ia2(Board, Move, Player).
-ia(Board, Move, Player, _) :-
+ia(Board, Move, Player, 3) :-
     ia3(Board, Move, Player).
+ia(Board, Move, Player, 4) :-
+    ia3(Board, Move, Player).
+ia(_, Move, Player, 5) :-
+    explorateur(Player, Move).

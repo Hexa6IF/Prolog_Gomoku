@@ -36,7 +36,7 @@ playMoves(Board,_,[],Board).
 playMoves(Board,Player,[[]|Moves],FinalBoard) :-			% Si le coup à jouer est une liste vide, on passe
 			playMoves(Board,Player,Moves,FinalBoard).
 playMoves(Board,Player,[Move|Moves],FinalBoard) :-
-			playMove(Board,Move,NewBoard,Player),
+			playMove(Move,Player,Board,NewBoard),
 			nextPlayer(Player,Opponent),
 			playMoves(NewBoard,Opponent,Moves,FinalBoard),!.
 
@@ -88,7 +88,6 @@ explore(Player,Height,Strategy,CoupsPrecedent,[CoupExplore|ResteAJouer],[CoupExp
             incr1(NewHeight,Height),
             nextPlayer(Player,Opponent),
 			maplist(explore(Opponent,NewHeight,NewStrategy,[CoupExplore|CoupsPrecedent]),ResteAJouer,ListeCoupsN1,ListMax),
-			writeln(ListMax),
             changeStrategy(NewStrategy,Strategy),
 			selectBest(Indices,ListMax,Best,Strategy), 								% On selectionne les meilleurs coups
 			maplist(fakenth0(ListeCoupsN1),Indices,ListMoves).
@@ -115,13 +114,13 @@ calculMeilleurMoves(Player,Board,Max,ListMoves) :-
 			selectVar(Board,PossibleMoves),
 			length(PossibleMoves,NumberOfMoves),
 			length(Gain,NumberOfMoves),
-			maplist(heuristic(Player),PossibleMoves,Gain), % On teste les gains pour chaque coup. Note : Maplist ajoute les arguments à la fin et dans l'ordre 
+			maplist(heuristic2(Player),PossibleMoves,Gain), % On teste les gains pour chaque coup. Note : Maplist ajoute les arguments à la fin et dans l'ordre 
 			selectMax(Indices,Gain,Max), 								% On selectionne les meilleurs coups
 			maplist(fakenth0(PossibleMoves),Indices,ListMoves).
 
 
-heuristic(Player,Move,BoardScore) :- 
+heuristic2(Player,Move,BoardScore) :- 
             currentlyEvaluatedBoard(Board),
-            playMove(Board,Move,NewBoard,Player),
-            evalBoard(NewBoard, Player, BoardScore).  %%%% HEURISTIQUE A AJOUTER ICI
-heuristic(_,_,0).
+            playMove(Move,Player,Board,NewBoard),
+            evalBoard1(NewBoard, Player, BoardScore).  %%%% HEURISTIQUE A AJOUTER ICI
+heuristic2(_,_,0).
