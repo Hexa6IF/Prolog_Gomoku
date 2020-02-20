@@ -1,4 +1,4 @@
-# GOMOKU - ALIA Prolog (Hexanome 4133)
+jhb# GOMOKU - ALIA Prolog (Hexanome 4133)
 
 ## Description
 A gomoku game implemented in Swi Prolog.
